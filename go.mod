@@ -1,8 +1,8 @@
 module nuru-lsp
 
-go 1.21.3
+go 1.20.1
 
-require github.com/TobiasYin/go-lsp v0.0.0-20230726094935-726488f25eb2
+require github.com/TobiasYin/go-lsp v0.0.0-20231106040121-c84e66f01aa4
 
 require (
 	github.com/json-iterator/go v1.1.12 // indirect

@@ -1,5 +1,5 @@
-github.com/TobiasYin/go-lsp v0.0.0-20230726094935-726488f25eb2 h1:WqCrfY3A+SiWvG9I9ONeahS6ggFuHpnJyhucaRhm6VU=
-github.com/TobiasYin/go-lsp v0.0.0-20230726094935-726488f25eb2/go.mod h1:wcol2p6rdHzKIPn6+I4LL9jv6BBkBklZGZsrZ15wkgU=
+github.com/TobiasYin/go-lsp v0.0.0-20231106040121-c84e66f01aa4 h1:FZOnnAwcy8nr77stDFINHVgTTkpbyZNTw/ZOhJrWA7I=
+github.com/TobiasYin/go-lsp v0.0.0-20231106040121-c84e66f01aa4/go.mod h1:wcol2p6rdHzKIPn6+I4LL9jv6BBkBklZGZsrZ15wkgU=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

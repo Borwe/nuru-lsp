@@ -1,0 +1,10 @@
+[language-server.nuru-lsp]
+command = "./nuru-lsp"
+
+[[language]]
+name = "Nuru"
+scope = "source.nr"
+file-types = ["nr", "sr"]
+comment-token = "//"
+indent = { tab-width = 4, unit = " "}
+language-servers = ["nuru-lsp"]
