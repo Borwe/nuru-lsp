@@ -1,5 +1,9 @@
 tumia "test"
 
+okay
+
+dasda
+bo.
 fuck = unda(){
  andika("SHIT");
 }
@@ -22,3 +26,6 @@ test.cheka();
 test.yolo.life();
 andika("Comeon");
 anika("Yolo baby");
+whooooo yeah baby
+aaaaa
+cfuc

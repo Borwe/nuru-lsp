@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"log"
+	"nuru-lsp/completions"
+	"nuru-lsp/data"
 	"os"
 
 	"github.com/TobiasYin/go-lsp/logs"
@@ -50,22 +52,9 @@ func main() {
 		}, nil
 	})
 
-	server.OnCompletion(func(ctx context.Context,
-		req *defines.CompletionParams) (*[]defines.CompletionItem, error) {
-		logs.Println("Completion:", req)
-		return nil, nil
-	})
+	server.OnCompletion(completions.CompletionFunc)
 
-	server.OnDidChangeTextDocument(func(ctx context.Context, req *defines.DidChangeTextDocumentParams) error {
-		logs.Println("DocChange: ", req)
-		logs.Println("Version: ", req.TextDocument.Version)
-		logs.Println("URI: ", req.TextDocument.Uri)
-		for i, v := range req.ContentChanges {
-			logs.Println("Range ", i, ": ", v.Range)
-			logs.Println("ContentChange ", i, ": ", v.Text)
-		}
-		return nil
-	})
+	server.OnDidChangeTextDocument(data.OnDataChange)
 
 	server.Run()
 }
