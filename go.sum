@@ -1,5 +1,7 @@
-github.com/TobiasYin/go-lsp v0.0.0-20231106040121-c84e66f01aa4 h1:FZOnnAwcy8nr77stDFINHVgTTkpbyZNTw/ZOhJrWA7I=
-github.com/TobiasYin/go-lsp v0.0.0-20231106040121-c84e66f01aa4/go.mod h1:wcol2p6rdHzKIPn6+I4LL9jv6BBkBklZGZsrZ15wkgU=
+github.com/AvicennaJr/Nuru v0.5.16 h1:RXCArPAncLHZ2PAfhEhIsvcQgufTbhBF7WFisEOAn8U=
+github.com/AvicennaJr/Nuru v0.5.16/go.mod h1:+Bjvazr0prg18IJklTKlL5MV+KGGSrL3HVwWbyer2Xs=
+github.com/Borwe/go-lsp v0.0.0-20231218101043-53d22869c872 h1:BEOkmHCAn48RlPmfRIpGDMMa9CzJX8fJ3P63Wg8VWNM=
+github.com/Borwe/go-lsp v0.0.0-20231218101043-53d22869c872/go.mod h1:WTczNTu9J20Hw/PrChBDplNT8jUP+7qc4HwyQG5kYTE=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

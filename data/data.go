@@ -2,20 +2,81 @@ package data
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 	"sync"
+	"unicode"
 
-	"github.com/TobiasYin/go-lsp/lsp/defines"
+	"github.com/AvicennaJr/Nuru/lexer"
+	"github.com/AvicennaJr/Nuru/parser"
+	"github.com/Borwe/go-lsp/logs"
+	"github.com/Borwe/go-lsp/lsp/defines"
 )
 
-type ErrorMapLineNumbers = map[uint64][]string
+type ErrorMapLineNumbers = map[uint][]string
+
+/*
+  - Hold variable information, for lookup
+    when invoking onComplete
+*/
+type VariableOrFunction struct {
+	Line      uint
+	Name      string
+	DocString *string
+	File      string
+	Scope     uint
+}
+
+func addDocString(varOrFunc *VariableOrFunction) {
+	content := Pages[varOrFunc.File].Content
+	if varOrFunc.Line-1 >= 0 {
+		trimed := strings.Trim(content[varOrFunc.Line-1], " ")
+		if len(trimed) >= 2 {
+			//single line comment
+			if trimed[0:2] == "//" {
+				comment := trimed[2:]
+				varOrFunc.DocString = &comment
+				return
+			}
+
+			//check if multi line comment
+			if trimed[len(trimed)-2:] == "*/" {
+				if trimed[0:2] == "/*" {
+					//means double line quotes is in same line
+					comment := trimed[2 : len(trimed)-2]
+					varOrFunc.DocString = &comment
+					return
+				}
+
+				comment := make([]string, 0)
+				comment = append(comment, trimed[:2])
+				startPos := varOrFunc.Line - 2
+				for startPos >= 0 {
+					trimed = strings.Trim(content[startPos], " ")
+					if trimed[0:2] == "/*" {
+						comment = append([]string{trimed[2:]}, comment...)
+						final := strings.Join(comment, "\n")
+						varOrFunc.DocString = &final
+						return
+					}
+					startPos -= 1
+				}
+			}
+		}
+	}
+}
 
 // Hold information on .nr file
 type Data struct {
-	File    string
-	Version uint64
-	Errors  *ErrorMapLineNumbers
-	Content []string
+	File      string
+	Version   uint64
+	Errors    ErrorMapLineNumbers
+	Content   []string
+	Variables []VariableOrFunction
 }
 
 var Pages = make(map[string]Data)
@@ -25,9 +86,46 @@ func NewData(file string, version uint64, content []string) Data {
 	return Data{
 		File:    file,
 		Version: version,
-		Errors:  new(ErrorMapLineNumbers),
+		Errors:  make(ErrorMapLineNumbers, 0),
 		Content: content,
 	}
+}
+
+func parseErrorFromParser(error string) (uint, *string, *error) {
+
+	startPos := 0
+	numPosStart := 0
+	started := false
+	intString := ""
+	lineString := ""
+
+	logs.Printf("Debug %s", error)
+
+	for startPos < len(error) {
+		if unicode.IsDigit(rune(error[startPos])) && started == false {
+			started = true
+			numPosStart = startPos
+		}
+		if !unicode.IsDigit((rune(error[startPos]))) && started == true {
+			intString = error[numPosStart:startPos]
+			startPos += 2
+			break
+		}
+		startPos += 1
+	}
+
+	lineString = error[startPos:]
+	pos, er := strconv.Atoi(intString)
+	if er != nil {
+		err := errors.New("Failed to parse number")
+		return 0, nil, &err
+	}
+	if len(lineString) == 0 {
+		err := errors.New("Failed to parse error message")
+		return 0, nil, &err
+	}
+
+	return uint(pos), &lineString, nil
 }
 
 func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams) error {
@@ -54,6 +152,62 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 			doc.Content = content
 		}
 	}
+
+	//remove all previous errors
+	doc.Errors = make(ErrorMapLineNumbers, 0)
+	fileData := strings.Join(doc.Content, "\n")
+	l := lexer.New(fileData)
+	p := parser.New(l)
+	p.ParseProgram()
+	//if errors, update doc
+	if len(p.Errors()) > 0 {
+		for _, e := range p.Errors() {
+			pos, line, err := parseErrorFromParser(e)
+			if err != nil {
+				logs.Printf("Error %v", err)
+				os.Exit(1)
+			}
+			errorsList := doc.Errors[pos]
+			doc.Errors[pos] = append(errorsList, *line)
+		}
+	}
+	//if errors not empty, now send them over to client
+	diagnostics := make([]defines.Diagnostic, 0)
+	for k, v := range doc.Errors {
+		logs.Printf("VALUE_SEEN: %s\n", v)
+		for _, e := range v {
+			var endChar uint = 0
+			if k < uint(len(doc.Content)) {
+				endChar = uint(len(doc.Content[k-1]))
+			}
+			diagnostics = append(diagnostics, defines.Diagnostic{
+				Message: e,
+				Range: defines.Range{
+					Start: defines.Position{
+						Line:      k,
+						Character: 0,
+					},
+					End: defines.Position{
+						Line:      k,
+						Character: endChar,
+					},
+				},
+			})
+		}
+	}
+	publishDiag := defines.PublishDiagnosticsParams{
+		Uri:         req.TextDocument.Uri,
+		Diagnostics: diagnostics,
+	}
+	publishNot, err := json.Marshal(publishDiag)
+	if err != nil {
+		logs.Println("Failed parsing as json", publishNot)
+	} else {
+		fmt.Printf("Recieved notification: %s %s \n", "textDocument/publishDiagnostics", publishNot)
+		logs.Printf("Recieved notification: %s %s \n", "textDocument/publishDiagnostics", publishNot)
+	}
+
+	//now go line after line adding variables to scope
 
 	Pages[file] = doc
 

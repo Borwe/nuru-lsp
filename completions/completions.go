@@ -5,9 +5,27 @@ import (
 	"nuru-lsp/data"
 	"strings"
 
-	"github.com/TobiasYin/go-lsp/logs"
-	"github.com/TobiasYin/go-lsp/lsp/defines"
+	"github.com/Borwe/go-lsp/logs"
+	"github.com/Borwe/go-lsp/lsp/defines"
 )
+
+var functions = map[string]string{
+	"andika": `Inatumika kuandika mistari kwa terminali
+		mfano: andika(1,2,3) 
+		itaandika: 1, 2, 3 
+		katika terminali unachotumia`,
+	"jaza": `Inatumika kupata mistari kutuko kwa mtu
+		mfano: fanya jina = jaza("Andika Jina");
+			andika(jina)
+		mwelezo: ukijaza "Brian" na kufinya enter itaweka hiyo
+		kwa variabu inaitwa jina, ukiiandika utaona imeandika
+		"Brian" katika terminali`,
+	"fungua": `Inatumika kufunugua file
+		mfano: f = funugua("./kitu.txt")`,
+	"aina": `kinatumika kutambua aina ya kitu
+		mfano: aina(2)
+		itaandika: "NAMBA"`,
+}
 
 var keywords = []string{
 	"unda",
@@ -36,12 +54,21 @@ var Candidates = new(map[string]uint64)
 
 func defaultCompletionGenerator() (*[]defines.CompletionItem, error) {
 	result := make([]defines.CompletionItem, 0)
+
+	for k, v := range functions {
+		result = append(result, defines.CompletionItem{
+			Label:  k,
+			Detail: &v,
+		})
+	}
+
 	for _, v := range keywords {
 		completion := defines.CompletionItem{
 			Label: v,
 		}
 		result = append(result, completion)
 	}
+
 	return &result, nil
 }
 
@@ -51,6 +78,8 @@ func CompletionFunc(ctx context.Context,
 
 	file := string(req.TextDocument.Uri)
 	position := req.TextDocumentPositionParams.Position
+
+	logs.Printf("POSITION: %s", position)
 
 	defaultCompletion, _ := defaultCompletionGenerator()
 
@@ -71,31 +100,25 @@ func CompletionFunc(ctx context.Context,
 
 	//get the word to be completed
 	wordToCompelte := ""
-	for i, v := range doc.Content {
-		if i == int(position.Line) {
-			startPosition := position.Character - 1
-			for startPosition >= 0 {
-				//get space symbolizing start of new word
-				if v[startPosition] == ' ' {
-					startPosition += 1
-					break
-				}
-				//get space symbolizing start of new word after a dot
-				if v[startPosition] == '.' {
-					startPosition += 1
-					break
-				}
-				startPosition -= 1
-			}
-			wordToCompelte = v[startPosition:func() uint {
-				if position.Character > 0 {
-					return position.Character + 1
-				} else {
-					return position.Character
-				}
-			}()]
+	line := doc.Content[position.Line]
+	startPosition := position.Character - 1
+	for startPosition >= 0 && startPosition < uint(len(line)) {
+		//get space symbolizing start of new word
+		if line[startPosition] == ' ' {
+			startPosition += 1
+			break
 		}
+		//get space symbolizing start of new word after a dot
+		if line[startPosition] == '.' {
+			startPosition += 1
+			break
+		}
+		if startPosition == 0 {
+			break
+		}
+		startPosition -= 1
 	}
+	wordToCompelte = line[startPosition:position.Character]
 
 	if len(wordToCompelte) == 0 {
 		//return using all keywods

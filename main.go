@@ -5,11 +5,11 @@ import (
 	"log"
 	"nuru-lsp/completions"
 	"nuru-lsp/data"
+	"nuru-lsp/server"
 	"os"
 
-	"github.com/TobiasYin/go-lsp/logs"
-	"github.com/TobiasYin/go-lsp/lsp"
-	"github.com/TobiasYin/go-lsp/lsp/defines"
+	"github.com/Borwe/go-lsp/logs"
+	"github.com/Borwe/go-lsp/lsp/defines"
 )
 
 func setupLog() {
@@ -23,25 +23,20 @@ func setupLog() {
 				foundFile = false
 			}
 		}
-		logs.Init(log.New(f, "nuru-lsp:=> ", 0))
+		logs.Init(log.New(f, "", 0))
 	} else {
 		foundFile = false
 	}
 	if foundFile {
 		return
 	}
-	logs.Init(log.New(os.Stderr, "nuru-lsp:=> ", 0))
+	logs.Init(log.New(os.Stderr, "", 0))
 }
 
 func main() {
 	setupLog()
 
-	server := lsp.NewServer(&lsp.Options{
-		CompletionProvider: &defines.CompletionOptions{
-			TriggerCharacters: &[]string{"."},
-		},
-	})
-	server.OnHover(func(ctx context.Context,
+	server.Server.OnHover(func(ctx context.Context,
 		req *defines.HoverParams) (*defines.Hover, error) {
 		logs.Println("Hover:", req)
 		return &defines.Hover{
@@ -52,9 +47,9 @@ func main() {
 		}, nil
 	})
 
-	server.OnCompletion(completions.CompletionFunc)
+	server.Server.OnCompletion(completions.CompletionFunc)
 
-	server.OnDidChangeTextDocument(data.OnDataChange)
+	server.Server.OnDidChangeTextDocument(data.OnDataChange)
 
-	server.Run()
+	server.Server.Run()
 }
