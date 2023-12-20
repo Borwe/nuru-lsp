@@ -9,6 +9,7 @@
 ```sh
 git clone https://github.com/Borwe/nuru-lsp
 cd nuru-lsp
+go mod tidy
 go build
 ```
 
