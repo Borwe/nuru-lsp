@@ -165,7 +165,6 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 		for _, e := range p.Errors() {
 			pos, line, err := parseErrorFromParser(e)
 			if err != nil {
-				logs.Printf("Error Gotten=> %v", err)
 				os.Exit(1)
 			}
 			errorsList := doc.Errors[pos]

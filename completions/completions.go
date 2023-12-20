@@ -92,7 +92,7 @@ func CompletionFunc(ctx context.Context,
 	if found == false {
 		return defaultCompletion, nil
 	}
-	if position.Line > uint(len(doc.Content)) {
+	if position.Line >= uint(len(doc.Content)) {
 		logs.Printf("Error: position  %d > file %s of lines %d \n",
 			position.Line, file, len(doc.Content))
 		return defaultCompletion, nil

@@ -1,2 +1,3 @@
-fanya z = unda(){}
-	
+fanya z = unda(){
+	andika("Wuba luba adaba dadb");
+}
