@@ -55,15 +55,20 @@ var Candidates = new(map[string]uint64)
 func defaultCompletionGenerator() (*[]defines.CompletionItem, error) {
 	result := make([]defines.CompletionItem, 0)
 
+	funcsKind :=defines.CompletionItemKindFunction 
 	for k, v := range functions {
 		result = append(result, defines.CompletionItem{
+			Kind: &funcsKind,
 			Label:  k,
 			Detail: &v,
 		})
 	}
 
+
+	keyWordCompletion := defines.CompletionItemKindKeyword
 	for _, v := range keywords {
 		completion := defines.CompletionItem{
+			Kind: &keyWordCompletion,
 			Label: v,
 		}
 		result = append(result, completion)
@@ -78,8 +83,6 @@ func CompletionFunc(ctx context.Context,
 
 	file := string(req.TextDocument.Uri)
 	position := req.TextDocumentPositionParams.Position
-
-	logs.Printf("POSITION: %s", position)
 
 	defaultCompletion, _ := defaultCompletionGenerator()
 
