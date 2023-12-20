@@ -2,9 +2,9 @@ package data
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"nuru-lsp/server"
 	"os"
 	"strconv"
 	"strings"
@@ -159,12 +159,13 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 	l := lexer.New(fileData)
 	p := parser.New(l)
 	p.ParseProgram()
+	logs.Println("ERRORS ARE:", len(p.Errors()))
 	//if errors, update doc
 	if len(p.Errors()) > 0 {
 		for _, e := range p.Errors() {
 			pos, line, err := parseErrorFromParser(e)
 			if err != nil {
-				logs.Printf("Error %v", err)
+				logs.Printf("Error Gotten=> %v", err)
 				os.Exit(1)
 			}
 			errorsList := doc.Errors[pos]
@@ -174,7 +175,6 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 	//if errors not empty, now send them over to client
 	diagnostics := make([]defines.Diagnostic, 0)
 	for k, v := range doc.Errors {
-		logs.Printf("VALUE_SEEN: %s\n", v)
 		for _, e := range v {
 			var endChar uint = 0
 			if k < uint(len(doc.Content)) {
@@ -199,14 +199,7 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 		Uri:         req.TextDocument.Uri,
 		Diagnostics: diagnostics,
 	}
-	publishNot, err := json.Marshal(publishDiag)
-	if err != nil {
-		logs.Println("Failed parsing as json", publishNot)
-	} else {
-		fmt.Printf("Recieved notification: %s %s \n", "textDocument/publishDiagnostics", publishNot)
-		logs.Printf("Recieved notification: %s %s \n", "textDocument/publishDiagnostics", publishNot)
-	}
-
+	server.Notify(server.Server, "textDocument/publishDiagnostics", publishDiag)
 	//now go line after line adding variables to scope
 
 	Pages[file] = doc
