@@ -47,9 +47,10 @@ func main() {
 		}, nil
 	})
 
-	server.Server.OnCompletion(completions.CompletionFunc)
-
+	server.Server.OnDidOpenTextDocument(data.OnDocOpen)
+	server.Server.OnDidCloseTextDocument(data.OnDidClose)
 	server.Server.OnDidChangeTextDocument(data.OnDataChange)
+	server.Server.OnCompletion(completions.CompletionFunc)
 
 	server.Server.Run()
 }

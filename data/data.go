@@ -1,9 +1,11 @@
 package data
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"nuru-lsp/server"
 	"os"
 	"strconv"
@@ -128,31 +130,16 @@ func parseErrorFromParser(error string) (uint, *string, *error) {
 	return uint(pos), &lineString, nil
 }
 
-func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams) error {
-	file := string(req.TextDocument.Uri)
-
+func OnDidClose(ctx context.Context, req *defines.DidCloseTextDocumentParams) (err error) {
 	PagesMutext.Lock()
 	defer PagesMutext.Unlock()
 
-	doc, found := Pages[file]
-	if !found {
-		content := []string{}
-		for _, v := range req.ContentChanges {
-			content = append(content, fmt.Sprint(v.Text))
-		}
-		doc = NewData(string(req.TextDocument.Uri), uint64(req.TextDocument.Version), content)
+	file := string(req.TextDocument.Uri)
+	delete(Pages, file)
+	return nil
+}
 
-	} else {
-		if doc.Version < uint64(req.TextDocument.Version) {
-			doc.Version = uint64(req.TextDocument.Version)
-			content := []string{}
-			for _, v := range req.ContentChanges {
-				content = append(content, fmt.Sprint(v.Text))
-			}
-			doc.Content = content
-		}
-	}
-
+func parseAndNotifyErrors(doc *Data, uri defines.DocumentUri){
 	//remove all previous errors
 	doc.Errors = make(ErrorMapLineNumbers, 0)
 	fileData := strings.Join(doc.Content, "\n")
@@ -195,11 +182,86 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 		}
 	}
 	publishDiag := defines.PublishDiagnosticsParams{
-		Uri:         req.TextDocument.Uri,
+		Uri:         uri,
 		Diagnostics: diagnostics,
 	}
 	server.Notify(server.Server, "textDocument/publishDiagnostics", publishDiag)
 	//now go line after line adding variables to scope
+}
+
+func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
+	PagesMutext.Lock()
+	defer PagesMutext.Unlock()
+
+	file := string(req.TextDocument.Uri)
+	parsed, err := url.Parse(file)
+	if err!= nil {
+		return nil
+	}
+
+	//check if it exists
+	_, err = os.Stat(parsed.Path)
+	if os.IsNotExist(err){
+		return nil
+	}
+
+	//we reach here means it exists, so open file and read it line by line
+	fileO, err := os.Open(parsed.Path)
+	if err!= nil {
+		logs.Printf("File %s, doesn't open\n", parsed.Path)
+		return nil
+	}
+	defer fileO.Close()
+
+	//read content of file line by line
+	content := []string{}
+	scanner := bufio.NewScanner(fileO)
+	for scanner.Scan() {
+		content = append(content, scanner.Text())
+	}
+
+	if len(content) == 0 {
+		//empty file
+		return nil
+	}
+
+	doc := NewData(parsed.Path, 0, content)
+	//do diagnostics here on the file
+	parseAndNotifyErrors(&doc, req.TextDocument.Uri)
+
+	//store
+	Pages[parsed.Path] = doc
+
+	logs.Printf("NURULSP DONE Opened file-> %s\n",parsed.Path)
+	return nil
+}
+
+func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams) error {
+	file := string(req.TextDocument.Uri)
+
+	PagesMutext.Lock()
+	defer PagesMutext.Unlock()
+
+	doc, found := Pages[file]
+	if !found {
+		content := []string{}
+		for _, v := range req.ContentChanges {
+			content = append(content, fmt.Sprint(v.Text))
+		}
+		doc = NewData(string(req.TextDocument.Uri), uint64(req.TextDocument.Version), content)
+
+	} else {
+		if doc.Version < uint64(req.TextDocument.Version) {
+			doc.Version = uint64(req.TextDocument.Version)
+			content := []string{}
+			for _, v := range req.ContentChanges {
+				content = append(content, fmt.Sprint(v.Text))
+			}
+			doc.Content = content
+		}
+	}
+
+	parseAndNotifyErrors(&doc, req.TextDocument.Uri)
 
 	Pages[file] = doc
 
