@@ -60,7 +60,7 @@ func defaultCompletionGenerator() (*[]defines.CompletionItem, error) {
 		result = append(result, defines.CompletionItem{
 			Kind: &funcsKind,
 			Label:  k,
-			Detail: &v,
+			Documentation: v,
 		})
 	}
 
