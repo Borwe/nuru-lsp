@@ -1,0 +1,37 @@
+{
+  "name": "Nuru-Lsp",
+  "description": "Nuru Lsp Client",
+  "author": "Brian Orwe",
+  "license": "MIT",
+  "version": "0.0.1",
+  "publisher": "BrianOrwe",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Borwe/nuru-lsp"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "activationEvents": [
+    "onLanguage"
+  ],
+  "main": "./out/extension",
+  "contributes": {
+    "configuration": {}
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -b",
+    "watch": "tsc -b -w"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^8.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.5.7",
+    "typescript": "^5.2.2",
+    "@types/vscode": "^1.81.0",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  }
+}
