@@ -1,4 +1,5 @@
 import * as path from "path";
+import * as fs from "fs";
 import { workspace, ExtensionContext } from "vscode";
 
 import {
@@ -14,8 +15,12 @@ export function activate(context: ExtensionContext) {
   const command = "nuru-lsp"
 
   let foundNuruExecutable = false
-  const paths = process.env.PATH?.split(path.delimiter)
+  const paths = process.env.PATH?.split(path.delimiter).map(p=>path.join(p,command))
    || []
+  for(const p of paths){
+
+  }
+  
 
   const serverOptions: ServerOptions = {
     run: { command: command, transport: TransportKind.ipc },
