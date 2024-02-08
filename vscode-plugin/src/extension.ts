@@ -13,6 +13,10 @@ let client: LanguageClient;
 export function activate(context: ExtensionContext) {
   const command = "nuru-lsp"
 
+  let foundNuruExecutable = false
+  const paths = process.env.PATH?.split(path.delimiter)
+   || []
+
   const serverOptions: ServerOptions = {
     run: { command: command, transport: TransportKind.ipc },
     debug: {
