@@ -21,6 +21,7 @@
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceRoot}",
+				"--extensionTestsPath=${workspaceRoot}/vscode-plugin/out/test/index",
 				"${workspaceRoot}"
 			],
 			"outFiles": ["${workspaceRoot}/vscode-plugin/out/test/**/*.js"],
