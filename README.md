@@ -17,6 +17,10 @@ go build
 
 Once you build you will have the executable `nuru-lsp`, you can use it to setup with your editor and relate it with `.nr` or `.sr` files.
 
+#### Example VsCode
+
+Checkout [this README.md](https://github.com/Borwe/nuru-lsp/blob/master/vscode-plugin/README.md) for more information
+
 #### Example for neovim:
 
 ```lua

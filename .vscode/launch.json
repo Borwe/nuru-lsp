@@ -9,6 +9,10 @@
       "runtimeExecutable": "${execPath}",
       "args": ["--extensionDevelopmentPath=${workspaceRoot}"],
       "outFiles": ["${workspaceRoot}/vscode-plugin/out/**/*.js"],
+	  "preLaunchTask": {
+		  "type": "npm",
+		  "script": "compile"
+	  }
     },
 	{
 		"name": "Language Server E2E Test",
