@@ -2,6 +2,18 @@
 {
   "version": "0.2.0",
   "configurations": [
+	{
+		"args": [
+			"--extensionDevelopmentPath=${workspaceFolder}"
+		],
+		"name": "Launch Extension",
+		"outFiles": [
+			"${workspaceFolder}/out/**/*.js"
+		],
+		"preLaunchTask": "npm",
+		"request": "launch",
+		"type": "extensionHost"
+	},
     {
       "type": "extensionHost",
       "request": "launch",
@@ -11,25 +23,25 @@
       "outFiles": ["${workspaceRoot}/vscode-plugin/out/**/*.js"],
       "preLaunchTask": {
         "type": "npm",
-        "script": "watch"
+        "script": "build"
       }
     },
-		{
-			"name": "Language Server E2E Test",
-			"type": "extensionHost",
-			"request": "launch",
-			"runtimeExecutable": "${execPath}",
-			"args": [
-				"--extensionDevelopmentPath=${workspaceRoot}",
-				"--extensionTestsPath=${workspaceRoot}/vscode-plugin/out/test/index",
-				"${workspaceRoot}"
-			],
-			"outFiles": ["${workspaceRoot}/vscode-plugin/out/test/**/*.js"],
-			"autoAttachChildProcesses": true,
-			"preLaunchTask": {
-				"type": "npm",
-				"script": "watch"
-			}
+	{
+		"name": "Language Server E2E Test",
+		"type": "extensionHost",
+		"request": "launch",
+		"runtimeExecutable": "${execPath}",
+		"args": [
+			"--extensionDevelopmentPath=${workspaceRoot}",
+			"--extensionTestsPath=${workspaceRoot}/vscode-plugin/out/test/index",
+			"${workspaceRoot}"
+		],
+		"outFiles": ["${workspaceRoot}/vscode-plugin/out/test/**/*.js"],
+		"autoAttachChildProcesses": true,
+		"preLaunchTask": {
+			"type": "npm",
+			"script": "watch"
 		}
+	}
   ]
 }
