@@ -1,0 +1,18 @@
+name: Build VScode Extention
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Install vsce
+        run: npm i -g @vscode/vsce
+      
+      - name: Build extention
+        run: cd vscode-plugin && npm i && npm run compile && vsce package 
+    

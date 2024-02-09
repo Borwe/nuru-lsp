@@ -1,10 +1,12 @@
 {
-  "name": "nuru_lsp",
+  "name": "nuru-lsp",
+  "displayName": "Nuru Lsp",
   "description": "Nuru Lsp Client",
   "author": "Brian Orwe",
   "license": "MIT",
   "version": "0.0.1",
   "publisher": "BrianOrwe",
+  "icon": "./img/nuru.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/Borwe/nuru-lsp"
@@ -30,8 +32,10 @@
   "devDependencies": {
     "@types/node": "^20.5.7",
     "typescript": "^5.2.2",
-    "@types/vscode": "^1.81.0",
+    "@types/vscode": "^1.75.0",
     "@vscode/test-cli": "^0.0.4",
-    "@vscode/test-electron": "^2.3.8"
+    "@vscode/test-electron": "^2.3.8",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
   }
 }

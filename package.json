@@ -1,7 +1,7 @@
 {
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "cd vscode-plugin && tsc -b && cd ../",
+    "compile": "cd vscode-plugin && tsc -b && cd ../"
   },
   "dependencies": {
     "vscode-languageclient": "^8.1.0"
