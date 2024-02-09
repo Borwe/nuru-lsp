@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as fs from "fs";
+import * as os from "os";
 import { workspace, ExtensionContext, window } from "vscode";
 
 import {
@@ -12,7 +13,12 @@ import {
 let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
-  const command = "nuru-lsp"
+  const command = (()=>{
+    if(os.platform() === "win32"){
+      return "nuru-lsp.exe"
+    }
+    return "nuru-lsp"
+  })()
 
   let foundNuruExecutable = false
   const paths = process.env.PATH?.split(path.delimiter).map(p=>path.join(p,command))
@@ -25,14 +31,14 @@ export function activate(context: ExtensionContext) {
   }
 
   if(!foundNuruExecutable){
-    window.showWarningMessage("Missing nuru-lsp executable","Couldn't find nuru-lsp executable in your path, some things might not work")
+    window.showWarningMessage("Make sure nuru-lsp executable in your path, some things might not work if not")
   }
 
   const serverOptions: ServerOptions = {
-    run: { command: command, transport: TransportKind.ipc },
+    run: { command: command, transport: TransportKind.stdio },
     debug: {
       command: command,
-      transport: TransportKind.ipc,
+      transport: TransportKind.stdio,
     },
   };
 
