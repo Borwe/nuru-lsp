@@ -16,71 +16,9 @@ jobs:
       - name: Build extention
         run: cd vscode-plugin && npm i && npm run compile && vsce package 
       
-      - uses: "actions/upload-artifact@v2"
-        id: upload_artifact
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: contains(github.ref, 'tags/v')
         with:
-          path: ./vscode-plugin/nuru-lsp-0.0.1.vsix
-          name: nuru-lsp.vsix
-
-  release:
-    if: contains(github.ref, 'tags/v')
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-      - name: Store Release url
-        run: |
-          echo "${{ steps.create_release.outputs.upload_url }}" > ./upload_url
-
-      - uses: actions/upload-artifact@v1
-        with:
-          path: ./upload_url
-          name: upload_url
-
-
-  publish:
-    needs: release
-    if: contains(github.ref, 'tags/v')
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: nuru-lsp.vsix
-          path: ./
-
-      - name: Download URL
-        uses: actions/download-artifact@v1
-        with:
-          name: upload_url
-          path: ./
-
-      - name: Set Upload URL
-        id: set_upload_url
-        run: |
-          upload_url=`cat ./upload_url`
-          echo ::set-output name=upload_url::$upload_url
-
-      - name: Upload to Release
-        id: upload_to_release
-        uses: actions/upload-release-asset@v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.set_upload_url.outputs.upload_url }}
-          asset_path: ./nuru-lsp.vsix
-          asset_name: nuru-lsp.vsix
-          asset_content_type: application/zip
+          files: ./vscode-plugin/*.vsix
     
