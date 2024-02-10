@@ -19,6 +19,20 @@
   ],
   "main": "./out/extension",
   "contributes": {
+    "commands": [
+      {
+        "command": "nuru.languageserver.restart",
+        "title": "Nuru LSP: Restart"
+      },
+      {
+        "command": "nuru.languageserver.stop",
+        "title": "Nuru LSP: Stop"
+      },
+      {
+        "command": "nuru.languageserver.start",
+        "title": "Nuru LSP: Start"
+      }
+    ],
     "configuration": {}
   },
   "scripts": {

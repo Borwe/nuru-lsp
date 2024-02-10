@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
-import { workspace, ExtensionContext, window } from "vscode";
+import { workspace, ExtensionContext, window, commands } from "vscode";
 
 import {
   LanguageClient,
@@ -62,6 +62,27 @@ export function activate(context: ExtensionContext) {
 
   // Start the client. This will also launch the server
   client.start();
+
+  //register commands
+  commands.registerCommand("nuru.languageserver.restart", async ()=>{
+    if(client.isRunning()){
+      await client.stop()
+    }
+    client.start()
+    window.showInformationMessage("Nuru LSP restarted")
+  })
+  commands.registerCommand("nuru.languageserver.stop", async ()=>{
+    if(client.isRunning()){
+      await client.stop()
+    }
+    window.showInformationMessage("Nuru LSP stopped")
+  })
+  commands.registerCommand("nuru.languageserver.start", async ()=>{
+    if(!client.isRunning()){
+      await client.start()
+    }
+    window.showInformationMessage("Nuru LSP started")
+  })
 }
 
 export function deactivate(): Thenable<void> | undefined {
