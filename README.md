@@ -1,7 +1,8 @@
-# :construction: UNOFFICIAL NURU LSP SERVER :construction:
+# :construction: UNOFFICIAL [NURU](https://nuruprogramming.org/) LSP SERVER :construction:
 
 ## Still under development :smile:
 
+## For more info on Nuru Programming Language click [here](https://nuruprogramming.org/)
 
 
 ## Building from source
