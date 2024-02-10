@@ -14,8 +14,11 @@
   "engines": {
     "vscode": "^1.75.0"
   },
+  "extensionDependencies": [
+    "nuruprogramminglanguage.nuru"
+  ],
   "activationEvents": [
-    "onLanguage"
+    "onLanguage:plaintext"
   ],
   "main": "./out/extension",
   "contributes": {
@@ -32,8 +35,7 @@
         "command": "nuru.languageserver.start",
         "title": "Nuru LSP: Start"
       }
-    ],
-    "configuration": {}
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

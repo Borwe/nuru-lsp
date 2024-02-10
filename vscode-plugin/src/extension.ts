@@ -13,56 +13,6 @@ import {
 let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
-  const command = (()=>{
-    if(os.platform() === "win32"){
-      return "nuru-lsp.exe"
-    }
-    return "nuru-lsp"
-  })()
-
-  let foundNuruExecutable = false
-  const paths = process.env.PATH?.split(path.delimiter).map(p=>path.join(p,command))
-   || []
-  for(const p of paths){
-    if(fs.existsSync(p)){
-      foundNuruExecutable = true
-      break;
-    }
-  }
-
-  if(!foundNuruExecutable){
-    window.showWarningMessage("Make sure nuru-lsp executable in your path, some things might not work if not")
-  }
-
-  const serverOptions: ServerOptions = {
-    run: { command: command, transport: TransportKind.stdio },
-    debug: {
-      command: command,
-      transport: TransportKind.stdio,
-    },
-  };
-
-  // Options to control the language client
-  const clientOptions: LanguageClientOptions = {
-    // Register the server for all documents by default
-    documentSelector: [{ scheme: "file", language: "nuru", pattern: "*.{nr,sr}" }],
-    synchronize: {
-      // Notify the server about file changes to '.clientrc files contained in the workspace
-      fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
-    },
-  };
-
-  // Create the language client and start the client.
-  client = new LanguageClient(
-    "nuru-lsp",
-    "nuru-lsp",
-    serverOptions,
-    clientOptions
-  );
-
-  // Start the client. This will also launch the server
-  client.start();
-
   //register commands
   commands.registerCommand("nuru.languageserver.restart", async ()=>{
     if(client.isRunning()){
@@ -83,6 +33,42 @@ export function activate(context: ExtensionContext) {
     }
     window.showInformationMessage("Nuru LSP started")
   })
+
+
+  const command = (()=>{
+    if(os.platform() === "win32"){
+      return "nuru-lsp.exe"
+    }
+    return "nuru-lsp"
+  })()
+
+  const serverOptions: ServerOptions = {
+    run: { command: command, transport: TransportKind.stdio },
+    debug: { command: command, transport: TransportKind.stdio },
+  };
+
+  // Options to control the language client
+  const clientOptions: LanguageClientOptions = {
+    // Register the server for all documents by default
+    documentSelector: [{ language: "nuru" }],
+    synchronize: {
+      // Notify the server about file changes to '.clientrc files contained in the workspace
+      fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
+    },
+  };
+
+  // Create the language client and start the client.
+  client = new LanguageClient(
+    "nuru-lsp",
+    "nuru-lsp",
+    serverOptions,
+    clientOptions
+  );
+
+  // Start the client. This will also launch the server
+  client.start().catch((err)=>{
+    window.showErrorMessage(`Nuru Lsp failed to start error: ${err}`)
+  });
 }
 
 export function deactivate(): Thenable<void> | undefined {
