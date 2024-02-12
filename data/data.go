@@ -1,7 +1,6 @@
 package data
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -146,13 +145,13 @@ func parseAndNotifyErrors(doc *Data, uri defines.DocumentUri) {
 	l := lexer.New(fileData)
 	p := parser.New(l)
 	p.ParseProgram()
-	logs.Println("ERRORS ARE:", len(p.Errors()))
 	//if errors, update doc
 	if len(p.Errors()) > 0 {
 		for _, e := range p.Errors() {
 			pos, line, err := parseErrorFromParser(e)
 			if err != nil {
-				os.Exit(1)
+				logs.Printf("Error parsing errors: %s\n", *err)
+				return
 			}
 			errorsList := doc.Errors[pos]
 			doc.Errors[pos] = append(errorsList, *line)
@@ -206,25 +205,14 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 	}
 
 	//we reach here means it exists, so open file and read it line by line
-	fileO, err := os.Open(parsed.Path)
-	if err != nil {
-		//meaning new file so nothing to parse, just exit
-		return nil
-	}
-	defer fileO.Close()
 
 	//read content of file line by line
-	content := []string{}
-	scanner := bufio.NewScanner(fileO)
-	for scanner.Scan() {
-		content = append(content, scanner.Text())
-	}
+	content := strings.Split(req.TextDocument.Text, "\n")
 
 	if len(content) == 0 {
 		//empty file
 		return nil
 	}
-
 	doc := NewData(parsed.Path, 0, content)
 	//do diagnostics here on the file
 	parseAndNotifyErrors(&doc, req.TextDocument.Uri)
