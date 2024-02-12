@@ -130,11 +130,6 @@ func parseErrorFromParser(error string) (uint, *string, *error) {
 }
 
 func OnDidClose(ctx context.Context, req *defines.DidCloseTextDocumentParams) (err error) {
-	PagesMutext.Lock()
-	defer PagesMutext.Unlock()
-
-	file := string(req.TextDocument.Uri)
-	delete(Pages, file)
 	return nil
 }
 
