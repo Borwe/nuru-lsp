@@ -139,7 +139,7 @@ func OnDidClose(ctx context.Context, req *defines.DidCloseTextDocumentParams) (e
 	return nil
 }
 
-func parseAndNotifyErrors(doc *Data, uri defines.DocumentUri){
+func parseAndNotifyErrors(doc *Data, uri defines.DocumentUri) {
 	//remove all previous errors
 	doc.Errors = make(ErrorMapLineNumbers, 0)
 	fileData := strings.Join(doc.Content, "\n")
@@ -195,20 +195,20 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 
 	file := string(req.TextDocument.Uri)
 	parsed, err := url.Parse(file)
-	if err!= nil {
+	if err != nil {
 		return nil
 	}
 
 	//check if it exists
 	_, err = os.Stat(parsed.Path)
-	if os.IsNotExist(err){
+	if os.IsNotExist(err) {
 		return nil
 	}
 
 	//we reach here means it exists, so open file and read it line by line
 	fileO, err := os.Open(parsed.Path)
-	if err!= nil {
-		logs.Printf("File %s, doesn't open\n", parsed.Path)
+	if err != nil {
+		//meaning new file so nothing to parse, just exit
 		return nil
 	}
 	defer fileO.Close()
@@ -232,7 +232,7 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 	//store
 	Pages[parsed.Path] = doc
 
-	logs.Printf("NURULSP DONE Opened file-> %s\n",parsed.Path)
+	logs.Printf("NURULSP DONE Opened file-> %s\n", parsed.Path)
 	return nil
 }
 

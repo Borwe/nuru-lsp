@@ -12,22 +12,28 @@ import (
 	"github.com/Borwe/go-lsp/lsp/defines"
 )
 
+func getLogFile() (bool,*string) {
+		if os.Args[1]== "--stdio" {
+			if len(os.Args) == 2 {
+				return false, nil
+			}
+			return true, &os.Args[2]
+		}else{
+			return true, &os.Args[1]
+		}
+}
+
 func setupLog() {
-	foundFile := true
-	if len(os.Args) == 2 {
-		file := os.Args[1]
-		f, err := os.Open(file)
+	foundFile, file := getLogFile()
+	if foundFile {
+		f, err := os.Open(*file)
 		if err != nil {
-			f, err = os.Create(file)
+			f, err = os.Create(*file)
 			if err != nil {
 				foundFile = false
 			}
 		}
 		logs.Init(log.New(f, "", 0))
-	} else {
-		foundFile = false
-	}
-	if foundFile {
 		return
 	}
 	logs.Init(log.New(os.Stderr, "", 0))
