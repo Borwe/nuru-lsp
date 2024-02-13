@@ -57,6 +57,9 @@ func main() {
 		}, nil
 	})
 
+	server.Server.OnDidSaveTextDocument(func(ctx context.Context, req *defines.DidSaveTextDocumentParams) (err error) {
+		return nil
+	})
 	server.Server.OnDidOpenTextDocument(data.OnDocOpen)
 	server.Server.OnDidCloseTextDocument(data.OnDidClose)
 	server.Server.OnDidChangeTextDocument(data.OnDataChange)

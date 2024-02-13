@@ -25,11 +25,15 @@ type ErrorMapLineNumbers = map[uint][]string
     when invoking onComplete
 */
 type VariableOrFunction struct {
-	Line      uint
-	Name      string
-	DocString *string
-	File      string
-	Scope     uint
+	Line       uint
+	Name       string
+	DocString  *string
+	File       string
+	ScopeStart *uint
+	ScopeEnd   *uint
+	IsScope    bool
+	IsPakeji   bool
+	IsFunction bool
 }
 
 func addDocString(varOrFunc *VariableOrFunction) {
@@ -220,10 +224,10 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 }
 
 func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams) error {
-	file := string(req.TextDocument.Uri)
-
 	PagesMutext.Lock()
 	defer PagesMutext.Unlock()
+
+	file := string(req.TextDocument.Uri)
 
 	doc, found := Pages[file]
 	if !found {
