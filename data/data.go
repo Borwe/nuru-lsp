@@ -75,13 +75,32 @@ func addDocString(varOrFunc *VariableOrFunction) {
 	}
 }
 
+// Hold top of tree
+type Top struct {
+	Pakeji Pakeji
+	Items  []FuncVar
+}
+
+type FuncVar struct {
+	Items     []FuncVar
+	Line      int64
+	Name      string
+	StartDecl int64
+	EndDecl   int64
+	IsScope   bool
+}
+
+type Pakeji struct {
+	Items []FuncVar
+}
+
 // Hold information on .nr file
 type Data struct {
-	File      string
-	Version   uint64
-	Errors    ErrorMapLineNumbers
-	Content   []string
-	Variables []VariableOrFunction
+	File    string
+	Version uint64
+	Errors  ErrorMapLineNumbers
+	Content []string
+	Tree    *Top
 }
 
 var Pages = make(map[string]Data)
