@@ -20,61 +20,6 @@ import (
 
 type ErrorMapLineNumbers = map[uint][]string
 
-/*
-  - Hold variable information, for lookup
-    when invoking onComplete
-*/
-type VariableOrFunction struct {
-	Line       uint
-	Name       string
-	DocString  *string
-	File       string
-	ScopeStart *uint
-	ScopeEnd   *uint
-	IsScope    bool
-	IsPakeji   bool
-	IsFunction bool
-}
-
-func addDocString(varOrFunc *VariableOrFunction) {
-	content := Pages[varOrFunc.File].Content
-	if varOrFunc.Line-1 >= 0 {
-		trimed := strings.Trim(content[varOrFunc.Line-1], " ")
-		if len(trimed) >= 2 {
-			//single line comment
-			if trimed[0:2] == "//" {
-				comment := trimed[2:]
-				varOrFunc.DocString = &comment
-				return
-			}
-
-			//check if multi line comment
-			if trimed[len(trimed)-2:] == "*/" {
-				if trimed[0:2] == "/*" {
-					//means double line quotes is in same line
-					comment := trimed[2 : len(trimed)-2]
-					varOrFunc.DocString = &comment
-					return
-				}
-
-				comment := make([]string, 0)
-				comment = append(comment, trimed[:2])
-				startPos := varOrFunc.Line - 2
-				for startPos >= 0 {
-					trimed = strings.Trim(content[startPos], " ")
-					if trimed[0:2] == "/*" {
-						comment = append([]string{trimed[2:]}, comment...)
-						final := strings.Join(comment, "\n")
-						varOrFunc.DocString = &final
-						return
-					}
-					startPos -= 1
-				}
-			}
-		}
-	}
-}
-
 // Hold top of tree
 type Top struct {
 	Pakeji Pakeji
@@ -105,6 +50,10 @@ type Data struct {
 
 var Pages = make(map[string]Data)
 var PagesMutext = sync.Mutex{}
+
+func ParseTree(lines []string) *Top {
+	return nil
+}
 
 func NewData(file string, version uint64, content []string) Data {
 	return Data{
