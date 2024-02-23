@@ -1,11 +1,14 @@
+tumia test
+fanya yo = "YEAH"
+
 fanya z = unda(){
-	andika("Wuba luba adaba dadb");
+	andika("wuba luba adaba dadb")
 }
 
-fungua w = unda(){
+fanya w = unda(){
 	andika("X gone give to you")
 }
 
-fungua x = "WE GON GIVE To YAAH"
+fanya x = "WE GON GIVE To YAAH"
 
 andika(x)

@@ -1,0 +1,14 @@
+{
+  "name": "nuru-tree-sitter",
+  "version": "0.0.1",
+  "description": "Nuru basic treesitter for lsp",
+  "main": "bindings/node",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "brian.orwe@gmail.com",
+  "license": "MIT",
+  "dependencies": {
+    "tree-sitter-cli": "^0.21.0"
+  }
+}
