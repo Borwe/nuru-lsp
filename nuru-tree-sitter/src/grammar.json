@@ -151,6 +151,10 @@
             {
               "type": "SYMBOL",
               "name": "expression"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "ending"
             }
           ]
         },
@@ -315,6 +319,10 @@
           {
             "type": "SYMBOL",
             "name": "parameter_list"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "ending"
           }
         ]
       }
@@ -457,6 +465,19 @@
         {
           "type": "STRING",
           "value": "*/"
+        }
+      ]
+    },
+    "ending": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": ";"
+        },
+        {
+          "type": "STRING",
+          "value": "\n"
         }
       ]
     },

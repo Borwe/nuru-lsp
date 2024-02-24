@@ -79,6 +79,10 @@
       "required": true,
       "types": [
         {
+          "type": "ending",
+          "named": true
+        },
+        {
           "type": "equal",
           "named": true
         },
@@ -92,6 +96,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "ending",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "expression",
@@ -155,9 +164,13 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "ending",
+          "named": true
+        },
         {
           "type": "parameter_list",
           "named": true
@@ -308,6 +321,10 @@
   },
   {
     "type": "//",
+    "named": false
+  },
+  {
+    "type": ";",
     "named": false
   },
   {

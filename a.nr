@@ -1,6 +1,8 @@
 tumia test
 fanya yo = "YEAH"
 
+fanya wembe = 123;
+
 fanya z = unda(){
 	andika("wuba luba adaba dadb")
 }

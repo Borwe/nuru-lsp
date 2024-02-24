@@ -16,7 +16,7 @@ module.exports = grammar({
     declaration_statment: $ => choice(
       seq("fanya",
         field("variablename",$.identifier),
-          $.equal,$.expression),
+          $.equal,$.expression, $.ending),
       prec(2,seq(field("functionname",$.identifier),
         $.equal,$.function_statement)),
       prec(3,seq("fanya",
@@ -41,7 +41,8 @@ module.exports = grammar({
       ,")"),
 
     function_usage_statement: $=> prec(3,seq(
-      field("functionname",$.expression),$.parameter_list
+      field("functionname",$.expression),
+      $.parameter_list, $.ending
     )),
 
     block: $ => seq("{",
@@ -62,7 +63,11 @@ module.exports = grammar({
       "/*", $.expression, "*/"
     ),
 
-    ending: $=> ";",
+    ending: $=> choice(
+      ";",
+      "\n"
+    ),
+
     string_expression: $=> seq("\"",/[^\n"]*/,"\""),
 
     expression: $ => choice(
