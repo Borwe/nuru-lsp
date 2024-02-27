@@ -4,9 +4,15 @@
   "description": "Nuru basic treesitter for lsp",
   "main": "bindings/node",
   "scripts": {
-    "build": "npx tree-sitter-cli generate",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tree-sitter generate",
+    "test": "ts-node tests.ts"
   },
   "author": "brian.orwe@gmail.com",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.20",
+    "tree-sitter-cli": "^0.21.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
 }
