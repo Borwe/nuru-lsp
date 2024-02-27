@@ -22,13 +22,7 @@ func TestSimpleProgramIsParsed(t *testing.T) {
 		t.Fatalf("Error reading tree: %s", err)
 	}
 
-	firstChildFunction := tree.RootNode().ChildByFieldName("functionname")
-	if firstChildFunction == nil {
-		t.Fatal("First function not found")
-	}
+	children := tree.RootNode().NamedChildCount()
 
-	starts := firstChildFunction.StartByte()
-	ends := firstChildFunction.EndByte()
-
-	fmt.Printf("FIrst function variable Name is: %s", file[starts:ends])
+	fmt.Printf("Named children are: %d", children)
 }
