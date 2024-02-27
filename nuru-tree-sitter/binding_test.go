@@ -25,7 +25,7 @@ func TestSimpleProgramIsParsed(t *testing.T) {
 	children := tree.RootNode().NamedChildCount()
 
 	fmt.Printf("Named children are: %d", children)
-	if children == 4 {
-		t.Fatalf("Named children can't be nil")
-	}
+	//if children == 4 {
+	t.Fatalf("Named children can't be nil")
+	//}
 }
