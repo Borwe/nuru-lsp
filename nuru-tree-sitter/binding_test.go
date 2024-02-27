@@ -22,16 +22,13 @@ func TestSimpleProgramIsParsed(t *testing.T) {
 		t.Fatalf("Error reading tree: %s", err)
 	}
 
-	q, err := sitter.NewQuery([]byte("(declaration_statement)"), GetLanguage())
-	query := sitter.NewQueryCursor()
-	query.Exec(q, tree.RootNode())
-
-	m, ok := query.NextMatch()
-	if !ok {
-		fmt.Println("No match found")
+	firstChildFunction := tree.RootNode().ChildByFieldName("functionname")
+	if firstChildFunction == nil {
+		t.Fatal("First function not found")
 	}
 
-	for _, c := range m.Captures {
-		fmt.Printf("function variable Name is: %s", c.Node.Content(file))
-	}
+	starts := firstChildFunction.StartByte()
+	ends := firstChildFunction.EndByte()
+
+	fmt.Printf("FIrst function variable Name is: %s", file[starts:ends])
 }
