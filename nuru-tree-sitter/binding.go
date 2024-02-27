@@ -1,8 +1,7 @@
 package nuru_tree_sitter
 
-// #cgo CFLAGS: -Isrc/ -Isrc/tree_sitter/
-// #include <parser.h>
-//const TSLanguage * tree_sitter_nuru()
+// #include "src/parser.c"
+// const TSLanguage *tree_sitter_nuru();
 import "C"
 import (
 	"unsafe"
