@@ -26,6 +26,6 @@ func TestSimpleProgramIsParsed(t *testing.T) {
 
 	fmt.Printf("Named children are: %d", children)
 	//if children == 4 {
-	t.Fatalf("Named children can't be nil")
+	t.Fatalf("Named children can't be nil %d", children)
 	//}
 }
