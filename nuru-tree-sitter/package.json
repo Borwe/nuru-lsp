@@ -4,11 +4,9 @@
   "description": "Nuru basic treesitter for lsp",
   "main": "bindings/node",
   "scripts": {
+    "build": "npx tree-sitter-cli generate",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "brian.orwe@gmail.com",
-  "license": "MIT",
-  "dependencies": {
-    "tree-sitter-cli": "^0.21.0"
-  }
+  "license": "MIT"
 }
