@@ -2,7 +2,6 @@ package nuru_tree_sitter
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
@@ -22,10 +21,30 @@ func TestSimpleProgramIsParsed(t *testing.T) {
 		t.Fatalf("Error reading tree: %s", err)
 	}
 
-	children := tree.RootNode().NamedChildCount()
+	//get pakeji statements should be 1
+	q, err := sitter.NewQuery([]byte("(pakeji_tumia_statement) @pakeji"), GetLanguage())
+	if err != nil {
+		t.Fatalf("Failed to create query with error %s", err)
+	}
 
-	fmt.Printf("Named children are: %d", children)
-	//if children == 4 {
-	t.Fatalf("Named children can't be nil %d", children)
-	//}
+	qc := sitter.NewQueryCursor()
+	qc.Exec(q, tree.RootNode())
+
+	matches := 0
+	for {
+
+		m, ok := qc.NextMatch()
+		if !ok {
+			break
+		}
+
+		for _, c := range m.Captures {
+			matches += 1
+			t.Log(c.Node.Content(file))
+		}
+	}
+
+	if matches != 1 {
+		t.Fatalf("Failed to get 1 match of pakeji, got %d", matches)
+	}
 }
