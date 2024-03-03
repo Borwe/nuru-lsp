@@ -28,8 +28,9 @@ module.exports = grammar({
       "pakeji", $.identifier, $.block
     ),
 
-    pakeji_tumia_statement: $=> seq(
-      "tumia", field("pakejiname",$.identifier)
+    pakeji_tumia_statement: $=> choice(
+      seq("tumia", field("pakejiname",$.identifier)),
+      prec.left(3,"tumia")
     ),
 
     function_statement: $ => seq(

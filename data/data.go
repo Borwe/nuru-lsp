@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	nuru_tree_sitter "nuru-lsp/nuru-tree-sitter"
 	"nuru-lsp/server"
 	"os"
 	"strconv"
@@ -16,43 +17,92 @@ import (
 	"github.com/AvicennaJr/Nuru/parser"
 	"github.com/Borwe/go-lsp/logs"
 	"github.com/Borwe/go-lsp/lsp/defines"
+	sitter "github.com/smacker/go-tree-sitter"
 )
 
 type ErrorMapLineNumbers = map[uint][]string
 
-// Hold top of tree
-type Top struct {
-	Pakeji Pakeji
-	Items  []FuncVar
-}
-
-type FuncVar struct {
-	Items     []FuncVar
-	Line      int64
-	Name      string
-	StartDecl int64
-	EndDecl   int64
-	IsScope   bool
-}
-
-type Pakeji struct {
-	Items []FuncVar
-}
-
 // Hold information on .nr file
 type Data struct {
-	File    string
-	Version uint64
-	Errors  ErrorMapLineNumbers
-	Content []string
-	Tree    *Top
+	File     string
+	Version  uint64
+	Errors   ErrorMapLineNumbers
+	Content  []string
+	RootTree *sitter.Node
 }
 
 var Pages = make(map[string]Data)
 var PagesMutext = sync.Mutex{}
 
-func ParseTree(lines []string) *Top {
-	return nil
+func ParseTree(lines []string) (*sitter.Node, error) {
+	node, err := sitter.ParseCtx(context.Background(),
+		[]byte(strings.Join(lines, "")),
+		nuru_tree_sitter.GetLanguage())
+	return node, err
+}
+
+type ClosesNodeNotFound string
+
+func (e ClosesNodeNotFound) Error() string {
+	return string(e)
+}
+
+func traverseTreeToClosestNamedNode(node *sitter.Node, position defines.Position) (*sitter.Node, error) {
+	row := position.Line
+	collumn := position.Character
+	//check if start happens ahead
+	if node.StartPoint().Row > uint32(row) || node.EndPoint().Row < uint32(row) {
+		fmt.Println("FUCK AHEAD", node.StartPoint(), node.EndPoint())
+		return nil, ClosesNodeNotFound("node out happening ahead position")
+	}
+	// check if end happens before 
+	if node.StartPoint().Column > uint32(collumn) || node.EndPoint().Column < uint32(collumn) {
+		fmt.Println("FUCK BEFORE", node.StartPoint(), node.EndPoint())
+		return nil, ClosesNodeNotFound("node out happening before position")
+	}
+
+
+	count := node.ChildCount()
+
+	//meaning we have reached the last node
+	if count == 0 {
+		return node, nil
+	}
+
+	for i := uint32(0); i <count; i++ {
+		resultNode, _ := traverseTreeToClosestNamedNode(node.Child(int(i)), position)
+		if resultNode != nil {
+			return resultNode, nil
+		}
+	}
+
+	return nil, ClosesNodeNotFound("Closes Node not found")
+}
+
+func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defines.CompletionItem, error) {
+	node, err := ParseTree(d.Content)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("GOT ",node.String())
+	d.RootTree = node
+
+	//query for possible node type at position of completions
+	closestNode, err := traverseTreeToClosestNamedNode(node, params.Position)
+	fmt.Printf("SHIT %s", err)
+	if err != nil {
+		return nil, err
+	}
+	//do for tumia completions
+	if closestNode.Type() == "pakeji_tumia_statement" {
+		//get the identifier if any, then search files in same directory
+		// if they match value given, also check default tumias available
+		// by the nuru native.
+		// If empty, then show all default tumias, and any file that is a pakeji in
+		// the same directory
+		//then return
+	}
+	return nil, nil
 }
 
 func NewData(file string, version uint64, content []string) Data {

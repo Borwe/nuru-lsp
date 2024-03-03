@@ -10,6 +10,7 @@ import (
 )
 
 func GetLanguage() *sitter.Language {
+	//println("NURU")
 	ptr := unsafe.Pointer(C.tree_sitter_nuru())
 	return sitter.NewLanguage(ptr)
 }

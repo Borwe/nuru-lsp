@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	sitter "github.com/smacker/go-tree-sitter"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSimpleProgramIsParsed(t *testing.T) {
@@ -44,7 +45,5 @@ func TestSimpleProgramIsParsed(t *testing.T) {
 		}
 	}
 
-	if matches != 1 {
-		t.Fatalf("Failed to get 1 match of pakeji, got %d", matches)
-	}
+	assert.Equal(t, matches, 1, "Failed to get 1 match of pakeji")
 }
