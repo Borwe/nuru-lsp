@@ -28,10 +28,8 @@ module.exports = grammar({
       "pakeji", $.identifier, $.block
     ),
 
-    pakeji_tumia_statement: $=> choice(
-      seq("tumia", field("pakejiname",$.identifier)),
-      prec.left(3,"tumia")
-    ),
+    pakeji_tumia_statement: $=> seq("tumia",
+      optional(field("pakejiname",$.identifier)), $.ending),
 
     function_statement: $ => seq(
       "unda",$.parameter_list,$.block
@@ -64,10 +62,7 @@ module.exports = grammar({
       "/*", $.expression, "*/"
     ),
 
-    ending: $=> choice(
-      ";",
-      "\n"
-    ),
+    ending: $ => /;|\n/,
 
     string_expression: $=> seq("\"",/[^\n"]*/,"\""),
 

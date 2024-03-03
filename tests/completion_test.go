@@ -1,8 +1,7 @@
 package tests
 
 import (
-	"nuru-lsp/completions"
-	"nuru-lsp/data"
+	data_mod "nuru-lsp/data"
 	"runtime"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 
 func createCompletionParams(t *testing.T,
 	position defines.Position,
-	docInput []string, path *string) (data.Data, defines.CompletionParams) {
+	docInput []string, path *string) (data_mod.Data, defines.CompletionParams) {
 	var file *string = nil
 	if path == nil {
 		if _, file_loc, _, ok := runtime.Caller(0); ok == false {
@@ -28,10 +27,10 @@ func createCompletionParams(t *testing.T,
 	assert.NotEqual(t, 0, len(*file))
 	t.Logf("File is: %s", *file)
 
-	return data.Data{
+	return data_mod.Data{
 			File:    *file,
 			Version: 1,
-			Errors:  data.ErrorMapLineNumbers{},
+			Errors:  data_mod.ErrorMapLineNumbers{},
 			Content: docInput,
 		}, defines.CompletionParams{
 			TextDocumentPositionParams: defines.TextDocumentPositionParams{
@@ -43,7 +42,7 @@ func createCompletionParams(t *testing.T,
 		}
 }
 
-func TestTumiaCompletion(t *testing.T) {
+func TestTumiaCompletionNoIdentifier(t *testing.T) {
 	//create a completions params
 	data, completionParams := createCompletionParams(t, defines.Position{
 		Line:      0,
@@ -52,11 +51,16 @@ func TestTumiaCompletion(t *testing.T) {
 
 	items, err := data.TreeSitterCompletions(&completionParams)
 	assert.Nil(t, err)
-	assert.Nil(t, items)
-	tumias := append(completions.TUMIAS, "test")
+	assert.NotNil(t, items)
+	tumias := append(data_mod.TUMIAS, "test")
 
+	itemsLabels := []string{}
 	for _, item := range *items {
-		assert.Contains(t, tumias, item.Label)
+		itemsLabels = append(itemsLabels, item.Label)
+	}
+
+	for _, item := range tumias {
+		assert.Contains(t, itemsLabels, item)
 	}
 	assert.Equal(t, nil, err, "TreeSitterCompletions shouldn't return error here")
 }

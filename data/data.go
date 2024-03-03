@@ -20,6 +20,11 @@ import (
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
+
+var TUMIAS []string = []string{
+	"os", "muda", "mtandao", "jsoni", "hisabati",
+}
+
 type ErrorMapLineNumbers = map[uint][]string
 
 // Hold information on .nr file
@@ -35,8 +40,10 @@ var Pages = make(map[string]Data)
 var PagesMutext = sync.Mutex{}
 
 func ParseTree(lines []string) (*sitter.Node, error) {
+	data := strings.Join(lines, "\n")
+	data = data + "\n"
 	node, err := sitter.ParseCtx(context.Background(),
-		[]byte(strings.Join(lines, "")),
+		[]byte(data),
 		nuru_tree_sitter.GetLanguage())
 	return node, err
 }
@@ -49,27 +56,21 @@ func (e ClosesNodeNotFound) Error() string {
 
 func traverseTreeToClosestNamedNode(node *sitter.Node, position defines.Position) (*sitter.Node, error) {
 	row := position.Line
-	collumn := position.Character
 	//check if start happens ahead
 	if node.StartPoint().Row > uint32(row) || node.EndPoint().Row < uint32(row) {
-		fmt.Println("FUCK AHEAD", node.StartPoint(), node.EndPoint())
+		fmt.Println("FUCK AHEAD", node.StartPoint(), node.EndPoint(), position, node.String())
 		return nil, ClosesNodeNotFound("node out happening ahead position")
 	}
-	// check if end happens before 
-	if node.StartPoint().Column > uint32(collumn) || node.EndPoint().Column < uint32(collumn) {
-		fmt.Println("FUCK BEFORE", node.StartPoint(), node.EndPoint())
-		return nil, ClosesNodeNotFound("node out happening before position")
-	}
-
 
 	count := node.ChildCount()
 
 	//meaning we have reached the last node
 	if count == 0 {
+		//fmt.Println("NOOOO!!!!", node.EndPoint(), node.Parent().String())
 		return node, nil
 	}
 
-	for i := uint32(0); i <count; i++ {
+	for i := uint32(0); i < count; i++ {
 		resultNode, _ := traverseTreeToClosestNamedNode(node.Child(int(i)), position)
 		if resultNode != nil {
 			return resultNode, nil
@@ -84,21 +85,39 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("GOT ",node.String())
+	fmt.Println("GOT ", node.String())
 	d.RootTree = node
 
 	//query for possible node type at position of completions
 	closestNode, err := traverseTreeToClosestNamedNode(node, params.Position)
-	fmt.Printf("SHIT %s", err)
 	if err != nil {
+		fmt.Printf("SHIT %s", err)
 		return nil, err
 	}
+
+	fmt.Println("CLOSEST:", closestNode.String(), closestNode.Parent().Type())
 	//do for tumia completions
-	if closestNode.Type() == "pakeji_tumia_statement" {
+	if closestNode.Parent().Type() == "pakeji_tumia_statement" {
 		//get the identifier if any, then search files in same directory
 		// if they match value given, also check default tumias available
 		// by the nuru native.
 		// If empty, then show all default tumias, and any file that is a pakeji in
+		if closestNode.Type() == "tumia" {
+			completionItems := []defines.CompletionItem{}
+			for _, c := range TUMIAS {
+				detail := fmt.Sprintf("pakeji %s", c)
+				kind := defines.CompletionItemKind(defines.CompletionItemKindModule)
+				completionItems = append(completionItems,
+					defines.CompletionItem{
+						Label: c,
+						Detail: &detail,
+						InsertText: &c,
+						Kind: &kind,
+					})
+			}
+
+			return &completionItems, nil
+		}
 		// the same directory
 		//then return
 	}
