@@ -27,12 +27,10 @@ func createCompletionParams(t *testing.T,
 	assert.NotEqual(t, 0, len(*file))
 	t.Logf("File is: %s", *file)
 
-	return data_mod.Data{
-			File:    *file,
-			Version: 1,
-			Errors:  data_mod.ErrorMapLineNumbers{},
-			Content: docInput,
-		}, defines.CompletionParams{
+	data, _ := data_mod.NewData(*file,0,docInput)
+	
+
+	return *data, defines.CompletionParams{
 			TextDocumentPositionParams: defines.TextDocumentPositionParams{
 				TextDocument: defines.TextDocumentIdentifier{
 					Uri: defines.DocumentUri(*file),
@@ -52,7 +50,7 @@ func TestTumiaCompletionNoIdentifier(t *testing.T) {
 	items, err := data.TreeSitterCompletions(&completionParams)
 	assert.Nil(t, err)
 	assert.NotNil(t, items)
-	tumias := append(data_mod.TUMIAS, "test")
+	tumias := append(data_mod.TUMIAS, "test", "full_pakeji")
 
 	itemsLabels := []string{}
 	for _, item := range *items {

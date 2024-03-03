@@ -8,6 +8,7 @@ import (
 	nuru_tree_sitter "nuru-lsp/nuru-tree-sitter"
 	"nuru-lsp/server"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -80,6 +81,46 @@ func traverseTreeToClosestNamedNode(node *sitter.Node, position defines.Position
 	return nil, ClosesNodeNotFound("Closes Node not found")
 }
 
+func (d *Data) GetModulesInDir() []string {
+	modules := []string {}
+	filepath.Walk(filepath.Dir(d.File), func(path string, info os.FileInfo, _err error) error{
+		name := strings.Split(info.Name(), ".")
+		ending := name[len(name)-1]
+		if !info.IsDir() && (ending == "nr" || ending == "sr")  {
+			var data_to_use *Data
+			if data, found := Pages[path]; found == false{
+				bytes, err := os.ReadFile(path)
+				if err!= nil {
+					return nil
+				}
+				data := strings.Split(string(bytes), "\n")
+				data_to_use, err = NewData(path, 0, data)
+				if err!= nil {
+					return nil
+				}
+			}else{
+				data_to_use = &data
+			}
+
+			root := data_to_use.RootTree
+			q, err := sitter.NewQuery([]byte(HII_NI_PAKEJI),nuru_tree_sitter.GetLanguage())
+			if err!=nil {
+				fmt.Println("WTF", err)
+				return nil
+			}
+			qc := sitter.NewQueryCursor()
+			qc.Exec(q, root)
+
+			if _, ok := qc.NextMatch(); ok==true{
+				modules = append(modules, name[0])
+			}
+		}
+		return nil
+	})
+
+	return modules
+}
+
 func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defines.CompletionItem, error) {
 	node, err := ParseTree(d.Content)
 	if err != nil {
@@ -116,6 +157,18 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 					})
 			}
 
+			for _, module := range d.GetModulesInDir() {
+				detail := fmt.Sprintf("pakeji %s", module)
+				kind := defines.CompletionItemKind(defines.CompletionItemKindModule)
+				completionItems = append(completionItems,
+					defines.CompletionItem{
+						Label: module,
+						Detail: &detail,
+						InsertText: &module,
+						Kind: &kind,
+					})
+			}
+
 			return &completionItems, nil
 		}
 		// the same directory
@@ -124,13 +177,23 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 	return nil, nil
 }
 
-func NewData(file string, version uint64, content []string) Data {
-	return Data{
-		File:    file,
-		Version: version,
-		Errors:  make(ErrorMapLineNumbers, 0),
-		Content: content,
+func NewData(file string, version uint64, content []string) (*Data, error) {
+	root, err := ParseTree(content)
+	if err!= nil {
+		return nil, err
 	}
+
+	Pages[file] = Data{
+			File:    file,
+			Version: version,
+			Errors:  make(ErrorMapLineNumbers, 0),
+			Content: content,
+			RootTree: root,
+	}
+
+	data := Pages[file]
+
+	return &data, nil
 }
 
 func parseErrorFromParser(error string) (uint, *string, *error) {
@@ -249,12 +312,13 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 		//empty file
 		return nil
 	}
-	doc := NewData(parsed.Path, 0, content)
-	//do diagnostics here on the file
-	parseAndNotifyErrors(&doc, req.TextDocument.Uri)
+	doc, err := NewData(parsed.Path, 0, content)
+	if err != nil {
+		return nil
+	}
 
-	//store
-	Pages[parsed.Path] = doc
+	//do diagnostics here on the file
+	parseAndNotifyErrors(doc, req.TextDocument.Uri)
 
 	logs.Printf("NURULSP DONE Opened file-> %s\n", parsed.Path)
 	return nil
@@ -272,7 +336,8 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 		for _, v := range req.ContentChanges {
 			content = append(content, fmt.Sprint(v.Text))
 		}
-		doc = NewData(string(req.TextDocument.Uri), uint64(req.TextDocument.Version), content)
+		docnew, _ := NewData(string(req.TextDocument.Uri), uint64(req.TextDocument.Version), content)
+		doc = *docnew
 
 	} else {
 		if doc.Version < uint64(req.TextDocument.Version) {
