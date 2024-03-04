@@ -3,6 +3,7 @@ package tests
 import (
 	data_mod "nuru-lsp/data"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/Borwe/go-lsp/lsp/defines"
@@ -56,6 +57,39 @@ func TestTumiaCompletionNoIdentifier(t *testing.T) {
 	for _, item := range *items {
 		itemsLabels = append(itemsLabels, item.Label)
 	}
+
+	for _, item := range tumias {
+		assert.Contains(t, itemsLabels, item)
+	}
+	assert.Equal(t, nil, err, "TreeSitterCompletions shouldn't return error here")
+}
+
+
+func TestTumiaCompletionWithIdentifier(t *testing.T) {
+	//create a completions params
+	data, completionParams := createCompletionParams(t, defines.Position{
+		Line:      0,
+		Character: 6,
+	}, []string{"tumia t"}, nil)
+
+	items, err := data.TreeSitterCompletions(&completionParams)
+	assert.Nil(t, err)
+	assert.NotNil(t, items)
+
+	//fill tumias
+	tumias := []string{"test"}
+	for _, mod := range data_mod.TUMIAS {
+		if strings.Contains(mod, "t") {
+			tumias = append(tumias, mod)
+		}
+	}
+
+	itemsLabels := []string{}
+	for _, item := range *items {
+		itemsLabels = append(itemsLabels, item.Label)
+	}
+
+	assert.Equal(t, len(tumias), len(itemsLabels), "More items in completion than expected")
 
 	for _, item := range tumias {
 		assert.Contains(t, itemsLabels, item)

@@ -21,7 +21,6 @@ import (
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
-
 var TUMIAS []string = []string{
 	"os", "muda", "mtandao", "jsoni", "hisabati",
 }
@@ -59,7 +58,7 @@ func traverseTreeToClosestNamedNode(node *sitter.Node, position defines.Position
 	row := position.Line
 	//check if start happens ahead
 	if node.StartPoint().Row > uint32(row) || node.EndPoint().Row < uint32(row) {
-		fmt.Println("FUCK AHEAD", node.StartPoint(), node.EndPoint(), position, node.String())
+		fmt.Println("NOT WITHIN ROW", node.StartPoint(), node.EndPoint(), position, node.String())
 		return nil, ClosesNodeNotFound("node out happening ahead position")
 	}
 
@@ -67,51 +66,66 @@ func traverseTreeToClosestNamedNode(node *sitter.Node, position defines.Position
 
 	//meaning we have reached the last node
 	if count == 0 {
-		//fmt.Println("NOOOO!!!!", node.EndPoint(), node.Parent().String())
 		return node, nil
 	}
 
+	var resultNode *sitter.Node = nil
 	for i := uint32(0); i < count; i++ {
-		resultNode, _ := traverseTreeToClosestNamedNode(node.Child(int(i)), position)
-		if resultNode != nil {
-			return resultNode, nil
+		result, err := traverseTreeToClosestNamedNode(node.Child(int(i)), position)
+		if err != nil {
+			continue
+		}
+		if resultNode == nil {
+			resultNode = result
+			continue
+		}
+		distance := (result.StartPoint().Column - uint32(position.Character)) +
+			(uint32(position.Character) - result.EndPoint().Column)
+		distanceResultNode := (resultNode.StartPoint().Column - uint32(position.Character)) +
+			(uint32(position.Character) - resultNode.EndPoint().Column)
+
+		if distanceResultNode < distance {
+			resultNode = result
 		}
 	}
 
-	return nil, ClosesNodeNotFound("Closes Node not found")
+	if resultNode == nil {
+		return nil, ClosesNodeNotFound("Closes Node not found")
+	}
+	return resultNode, nil
 }
 
 func (d *Data) GetModulesInDir() []string {
-	modules := []string {}
-	filepath.Walk(filepath.Dir(d.File), func(path string, info os.FileInfo, _err error) error{
+	modules := []string{}
+	filepath.Walk(filepath.Dir(d.File), func(path string, info os.FileInfo, _err error) error {
 		name := strings.Split(info.Name(), ".")
 		ending := name[len(name)-1]
-		if !info.IsDir() && (ending == "nr" || ending == "sr")  {
+		if !info.IsDir() && (ending == "nr" || ending == "sr") {
 			var data_to_use *Data
-			if data, found := Pages[path]; found == false{
+			if data, found := Pages[path]; found == false {
 				bytes, err := os.ReadFile(path)
-				if err!= nil {
+				if err != nil {
 					return nil
 				}
 				data := strings.Split(string(bytes), "\n")
 				data_to_use, err = NewData(path, 0, data)
-				if err!= nil {
+				if err != nil {
 					return nil
 				}
-			}else{
+			} else {
 				data_to_use = &data
 			}
 
 			root := data_to_use.RootTree
-			q, err := sitter.NewQuery([]byte(HII_NI_PAKEJI),nuru_tree_sitter.GetLanguage())
-			if err!=nil {
+			q, err := sitter.NewQuery([]byte(HII_NI_PAKEJI), nuru_tree_sitter.GetLanguage())
+			if err != nil {
 				fmt.Println("WTF", err)
 				return nil
 			}
 			qc := sitter.NewQueryCursor()
 			qc.Exec(q, root)
 
-			if _, ok := qc.NextMatch(); ok==true{
+			if _, ok := qc.NextMatch(); ok == true {
 				modules = append(modules, name[0])
 			}
 		}
@@ -136,12 +150,46 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 		return nil, err
 	}
 
-	fmt.Println("CLOSEST:", closestNode.String(), closestNode.Parent().Type())
+	fmt.Println("CLOSEST:", closestNode.Type(), closestNode.Parent().Type())
 	//do for tumia completions
 	if closestNode.Parent().Type() == "pakeji_tumia_statement" {
 		//get the identifier if any, then search files in same directory
 		// if they match value given, also check default tumias available
 		// by the nuru native.
+		if closestNode.Type() == "identifier" {
+			identifier := closestNode.Content([]byte(strings.Join(d.Content, "")))
+			completionItems := []defines.CompletionItem{}
+			for _, c := range TUMIAS {
+				if strings.Contains(c, identifier) {
+					detail := fmt.Sprintf("pakeji %s", c)
+					kind := defines.CompletionItemKind(defines.CompletionItemKindModule)
+					completionItems = append(completionItems,
+						defines.CompletionItem{
+							Label:      c,
+							Detail:     &detail,
+							InsertText: &c,
+							Kind:       &kind,
+						})
+				}
+			}
+
+			for _, module := range d.GetModulesInDir() {
+				if strings.Contains(module, identifier) {
+					detail := fmt.Sprintf("pakeji %s", module)
+					kind := defines.CompletionItemKind(defines.CompletionItemKindModule)
+					completionItems = append(completionItems,
+						defines.CompletionItem{
+							Label:      module,
+							Detail:     &detail,
+							InsertText: &module,
+							Kind:       &kind,
+						})
+				}
+			}
+
+			return &completionItems, nil
+		}
+
 		// If empty, then show all default tumias, and any file that is a pakeji in
 		if closestNode.Type() == "tumia" {
 			completionItems := []defines.CompletionItem{}
@@ -150,10 +198,10 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 				kind := defines.CompletionItemKind(defines.CompletionItemKindModule)
 				completionItems = append(completionItems,
 					defines.CompletionItem{
-						Label: c,
-						Detail: &detail,
+						Label:      c,
+						Detail:     &detail,
 						InsertText: &c,
-						Kind: &kind,
+						Kind:       &kind,
 					})
 			}
 
@@ -162,10 +210,10 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 				kind := defines.CompletionItemKind(defines.CompletionItemKindModule)
 				completionItems = append(completionItems,
 					defines.CompletionItem{
-						Label: module,
-						Detail: &detail,
+						Label:      module,
+						Detail:     &detail,
 						InsertText: &module,
-						Kind: &kind,
+						Kind:       &kind,
 					})
 			}
 
@@ -179,16 +227,16 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 
 func NewData(file string, version uint64, content []string) (*Data, error) {
 	root, err := ParseTree(content)
-	if err!= nil {
+	if err != nil {
 		return nil, err
 	}
 
 	Pages[file] = Data{
-			File:    file,
-			Version: version,
-			Errors:  make(ErrorMapLineNumbers, 0),
-			Content: content,
-			RootTree: root,
+		File:     file,
+		Version:  version,
+		Errors:   make(ErrorMapLineNumbers, 0),
+		Content:  content,
+		RootTree: root,
 	}
 
 	data := Pages[file]
