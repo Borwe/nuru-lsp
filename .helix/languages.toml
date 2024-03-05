@@ -2,6 +2,7 @@
 command = "./nuru-lsp"
 
 [[language]]
+roots = []
 name = "Nuru"
 scope = "source.nr"
 file-types = ["nr", "sr"]

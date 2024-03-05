@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"nuru-lsp/completions"
 	data_mod "nuru-lsp/data"
 	"runtime"
 	"strings"
@@ -28,17 +29,16 @@ func createCompletionParams(t *testing.T,
 	assert.NotEqual(t, 0, len(*file))
 	t.Logf("File is: %s", *file)
 
-	data, _ := data_mod.NewData(*file,0,docInput)
-	
+	data, _ := data_mod.NewData(*file, 0, docInput)
 
 	return *data, defines.CompletionParams{
-			TextDocumentPositionParams: defines.TextDocumentPositionParams{
-				TextDocument: defines.TextDocumentIdentifier{
-					Uri: defines.DocumentUri(*file),
-				},
-				Position: position,
+		TextDocumentPositionParams: defines.TextDocumentPositionParams{
+			TextDocument: defines.TextDocumentIdentifier{
+				Uri: defines.DocumentUri(*file),
 			},
-		}
+			Position: position,
+		},
+	}
 }
 
 func TestTumiaCompletionNoIdentifier(t *testing.T) {
@@ -50,7 +50,6 @@ func TestTumiaCompletionNoIdentifier(t *testing.T) {
 
 	items, err := data.TreeSitterCompletions(&completionParams)
 	assert.Nil(t, err)
-	assert.NotNil(t, items)
 	tumias := append(data_mod.TUMIAS, "test", "full_pakeji")
 
 	itemsLabels := []string{}
@@ -61,9 +60,7 @@ func TestTumiaCompletionNoIdentifier(t *testing.T) {
 	for _, item := range tumias {
 		assert.Contains(t, itemsLabels, item)
 	}
-	assert.Equal(t, nil, err, "TreeSitterCompletions shouldn't return error here")
 }
-
 
 func TestTumiaCompletionWithIdentifier(t *testing.T) {
 	//create a completions params
@@ -74,7 +71,6 @@ func TestTumiaCompletionWithIdentifier(t *testing.T) {
 
 	items, err := data.TreeSitterCompletions(&completionParams)
 	assert.Nil(t, err)
-	assert.NotNil(t, items)
 
 	//fill tumias
 	tumias := []string{"test"}
@@ -94,5 +90,39 @@ func TestTumiaCompletionWithIdentifier(t *testing.T) {
 	for _, item := range tumias {
 		assert.Contains(t, itemsLabels, item)
 	}
-	assert.Equal(t, nil, err, "TreeSitterCompletions shouldn't return error here")
+}
+
+func TestVariableFunctionCompletionWithoutIdentifier(t *testing.T) {
+	//create a completions params
+	data, completionParams := createCompletionParams(t, defines.Position{
+		Line:      3,
+		Character: 0,
+	}, []string{"tumia test",
+		"fanya checka = unda(){ andika(\"Yolo\");}",
+		"yolo = 123",
+		"chora = \"50 Cent\"",
+		"",
+	}, nil)
+
+	items, err := data.TreeSitterCompletions(&completionParams)
+	assert.Nil(t, err)
+
+	//fill completions expected
+	completions_expected := []string{}
+	completions_expected = append(completions_expected, data_mod.TUMIAS...)
+	completions_expected = append(completions_expected, completions.Keywords...)
+	for k := range completions.Functions {
+		completions_expected = append(completions_expected, k)
+	}
+
+	itemsLabels := []string{}
+	for _, item := range *items {
+		itemsLabels = append(itemsLabels, item.Label)
+	}
+
+	assert.Equal(t, len(completions_expected), len(itemsLabels), "More items in completion than expected")
+
+	for _, item := range completions_expected {
+		assert.Contains(t, itemsLabels, item)
+	}
 }

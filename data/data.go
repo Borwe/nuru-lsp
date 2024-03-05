@@ -84,7 +84,11 @@ func traverseTreeToClosestNamedNode(node *sitter.Node, position defines.Position
 		distanceResultNode := (resultNode.StartPoint().Column - uint32(position.Character)) +
 			(uint32(position.Character) - resultNode.EndPoint().Column)
 
-		if distanceResultNode < distance {
+		fmt.Println("CURRENT", distance, "LAST RESULT", distanceResultNode)
+		fmt.Println("CURRENT: ", result.Type(),
+			"LAST RESULT", resultNode.Type())
+
+		if distance < distanceResultNode {
 			resultNode = result
 		}
 	}
@@ -136,23 +140,21 @@ func (d *Data) GetModulesInDir() []string {
 }
 
 func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defines.CompletionItem, error) {
-	node, err := ParseTree(d.Content)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("GOT ", node.String())
-	d.RootTree = node
+	fmt.Println("GOT ", d.RootTree.String())
 
 	//query for possible node type at position of completions
-	closestNode, err := traverseTreeToClosestNamedNode(node, params.Position)
+	closestNode, err := traverseTreeToClosestNamedNode(d.RootTree, params.Position)
 	if err != nil {
 		fmt.Printf("SHIT %s", err)
 		return nil, err
 	}
 
-	fmt.Println("CLOSEST:", closestNode.Type(), closestNode.Parent().Type())
+	parent := closestNode.Parent()
+	if parent != nil {
+		fmt.Println("CLOSEST:", closestNode.Type(), parent.Type())
+	}
 	//do for tumia completions
-	if closestNode.Parent().Type() == "pakeji_tumia_statement" {
+	if parent != nil && parent.Type() == "pakeji_tumia_statement" {
 		//get the identifier if any, then search files in same directory
 		// if they match value given, also check default tumias available
 		// by the nuru native.
@@ -191,6 +193,7 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 		}
 
 		// If empty, then show all default tumias, and any file that is a pakeji in
+		// the same directory then return
 		if closestNode.Type() == "tumia" {
 			completionItems := []defines.CompletionItem{}
 			for _, c := range TUMIAS {
@@ -219,10 +222,8 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 
 			return &completionItems, nil
 		}
-		// the same directory
-		//then return
 	}
-	return nil, nil
+	return nil, ClosesNodeNotFound("Failed to find element")
 }
 
 func NewData(file string, version uint64, content []string) (*Data, error) {

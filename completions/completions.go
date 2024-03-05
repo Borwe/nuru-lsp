@@ -9,7 +9,7 @@ import (
 	"github.com/Borwe/go-lsp/lsp/defines"
 )
 
-var functions = map[string]string{
+var Functions = map[string]string{
 	"andika": `Inatumika kuandika mistari kwa terminali
 		mfano: andika(1,2,3) 
 		itaandika: 1, 2, 3 
@@ -27,7 +27,7 @@ var functions = map[string]string{
 		itaandika: "NAMBA"`,
 }
 
-var keywords = []string{
+var Keywords = []string{
 	"unda",
 	"fanya",
 	"kweli",
@@ -56,7 +56,7 @@ func defaultCompletionGenerator() (*[]defines.CompletionItem, error) {
 	result := make([]defines.CompletionItem, 0)
 
 	funcsKind := defines.CompletionItemKindFunction
-	for k, v := range functions {
+	for k, v := range Functions {
 		result = append(result, defines.CompletionItem{
 			Kind:          &funcsKind,
 			Label:         k,
@@ -65,7 +65,7 @@ func defaultCompletionGenerator() (*[]defines.CompletionItem, error) {
 	}
 
 	keyWordCompletion := defines.CompletionItemKindKeyword
-	for _, v := range keywords {
+	for _, v := range Keywords {
 		completion := defines.CompletionItem{
 			Kind:  &keyWordCompletion,
 			Label: v,
