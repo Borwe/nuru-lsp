@@ -139,6 +139,10 @@ func (d *Data) GetModulesInDir() []string {
 	return modules
 }
 
+func (d *Data) getAllVariablesAndFunctions() *[]defines.CompletionItem {
+	return nil
+}
+
 func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defines.CompletionItem, error) {
 	fmt.Println("GOT ", d.RootTree.String())
 
@@ -222,6 +226,14 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 
 			return &completionItems, nil
 		}
+	}
+	closestType := closestNode.Type()
+	switch closestType {
+	case "ending":
+		completions := d.getAllVariablesAndFunctions()
+		return completions, nil
+	default:
+		fmt.Println("SHHHIIIT")
 	}
 	return nil, ClosesNodeNotFound("Failed to find element")
 }
