@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"nuru-lsp/completions"
+	"fmt"
 	data_mod "nuru-lsp/data"
 	"runtime"
 	"strings"
@@ -27,8 +27,6 @@ func createCompletionParams(t *testing.T,
 
 	assert.NotNil(t, file)
 	assert.NotEqual(t, 0, len(*file))
-	t.Logf("File is: %s", *file)
-
 	data, _ := data_mod.NewData(*file, 0, docInput)
 
 	return *data, defines.CompletionParams{
@@ -85,6 +83,7 @@ func TestTumiaCompletionWithIdentifier(t *testing.T) {
 		itemsLabels = append(itemsLabels, item.Label)
 	}
 
+	fmt.Println("LABELS: ",itemsLabels)
 	assert.Equal(t, len(tumias), len(itemsLabels), "More items in completion than expected")
 
 	for _, item := range tumias {
@@ -95,10 +94,11 @@ func TestTumiaCompletionWithIdentifier(t *testing.T) {
 func TestVariableFunctionCompletionWithoutIdentifier(t *testing.T) {
 	//create a completions params
 	data, completionParams := createCompletionParams(t, defines.Position{
-		Line:      3,
+		Line:      5,
 		Character: 0,
 	}, []string{"tumia test",
 		"fanya checka = unda(){ andika(\"Yolo\");}",
+		"wewe = unda(){ andika(\"WEWE\");}",
 		"yolo = 123",
 		"chora = \"50 Cent\"",
 		"",
@@ -108,19 +108,15 @@ func TestVariableFunctionCompletionWithoutIdentifier(t *testing.T) {
 	assert.Nil(t, err)
 
 	//fill completions expected
-	completions_expected := []string{}
-	completions_expected = append(completions_expected, data_mod.TUMIAS...)
-	completions_expected = append(completions_expected, completions.Keywords...)
-	for k := range completions.Functions {
-		completions_expected = append(completions_expected, k)
-	}
+	completions_expected := []string{"test", "checka", "wewe", "yolo", "chora"}
 
 	itemsLabels := []string{}
 	for _, item := range *items {
 		itemsLabels = append(itemsLabels, item.Label)
 	}
 
-	assert.Equal(t, len(completions_expected), len(itemsLabels), "More items in completion than expected")
+	assert.Equal(t, len(completions_expected), len(itemsLabels),
+		"Not same number of items in completion to the expected")
 
 	for _, item := range completions_expected {
 		assert.Contains(t, itemsLabels, item)

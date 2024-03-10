@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"nuru-lsp/consts"
 	nuru_tree_sitter "nuru-lsp/nuru-tree-sitter"
 	"nuru-lsp/server"
 	"os"
@@ -55,11 +56,24 @@ func (e ClosesNodeNotFound) Error() string {
 }
 
 func traverseTreeToClosestNamedNode(node *sitter.Node, position defines.Position) (*sitter.Node, error) {
+	fmt.Println("POSS: ",position)
 	row := position.Line
 	//check if start happens ahead
 	if node.StartPoint().Row > uint32(row) || node.EndPoint().Row < uint32(row) {
 		fmt.Println("NOT WITHIN ROW", node.StartPoint(), node.EndPoint(), position, node.String())
 		return nil, ClosesNodeNotFound("node out happening ahead position")
+	}
+
+	if node.StartPoint().Row == uint32(position.Line) {
+		if node.StartPoint().Column > uint32(position.Character){
+			fmt.Println("NOT WITHIN ROW", node.StartPoint(), node.EndPoint(), position, node.String())
+			return nil, ClosesNodeNotFound("node out happening before starting collumn")
+		}
+
+		if node.EndPoint().Column < uint32(position.Character) && node.EndPoint().Row <= uint32(position.Line){
+			fmt.Println("NOT WITHIN ROW", node.StartPoint(), node.EndPoint(), position, node.String())
+			return nil, ClosesNodeNotFound("node out happening ahead end collumn")
+		}
 	}
 
 	count := node.ChildCount()
@@ -121,7 +135,7 @@ func (d *Data) GetModulesInDir() []string {
 			}
 
 			root := data_to_use.RootTree
-			q, err := sitter.NewQuery([]byte(HII_NI_PAKEJI), nuru_tree_sitter.GetLanguage())
+			q, err := sitter.NewQuery([]byte(consts.HII_NI_PAKEJI), nuru_tree_sitter.GetLanguage())
 			if err != nil {
 				fmt.Println("WTF", err)
 				return nil
@@ -139,8 +153,67 @@ func (d *Data) GetModulesInDir() []string {
 	return modules
 }
 
+func getItems(dataRaw *[]byte,kind *defines.CompletionItemKind, detail string,
+	cursor *sitter.QueryCursor)[]defines.CompletionItem{
+	items := []defines.CompletionItem{}
+	for {
+		m, ok := cursor.NextMatch()
+		if !ok {
+			break;
+		}
+		for _, c := range m.Captures{
+			itemString := c.Node.Content(*dataRaw)
+			detail := fmt.Sprintf(detail,itemString)
+			items = append(items, defines.CompletionItem{
+				Label: itemString,
+				Detail: &detail,
+				Kind: kind,
+				InsertText: &itemString,
+			})
+		}
+	}
+
+	return items
+}
+
 func (d *Data) getAllVariablesAndFunctions() *[]defines.CompletionItem {
-	return nil
+	dataRaw := []byte(strings.Join(d.Content,"\n"))
+	items := []defines.CompletionItem{}
+	//get all usage pakeji statements
+	q, err := sitter.NewQuery([]byte(consts.TMUIA_PAEKJI_QUERY), nuru_tree_sitter.GetLanguage())
+	if err!=nil {
+		logs.Println("ERROR, FUCK",err)
+		return &items
+	}
+	qc := sitter.NewQueryCursor()
+	qc.Exec(q, d.RootTree)
+	completionKind := defines.CompletionItemKind(defines.CompletionItemKindModule)
+	items = append(items, getItems(&dataRaw, &completionKind, "pakeji %s", qc)...)
+
+	//get functions
+	q, err = sitter.NewQuery([]byte(consts.FUNCTION_DECLARATION_QUERY), nuru_tree_sitter.GetLanguage())
+	if err!=nil {
+		logs.Println("ERROR, FUCK",err)
+		return &items
+	}
+	qc = sitter.NewQueryCursor()
+	qc.Exec(q, d.RootTree)
+	completionKind = defines.CompletionItemKind(defines.CompletionItemKindFunction)
+	items = append(items, getItems(&dataRaw, &completionKind, "function %s", qc)...)
+
+	//get variables
+	q, err = sitter.NewQuery([]byte(consts.VARIABLE_DECLARATION_QUERY), nuru_tree_sitter.GetLanguage())
+	if err!=nil {
+		logs.Println("ERROR, FUCK",err)
+		return &items
+	}
+	qc = sitter.NewQueryCursor()
+	qc.Exec(q, d.RootTree)
+	completionKind = defines.CompletionItemKind(defines.CompletionItemKindVariable)
+	items = append(items, getItems(&dataRaw, &completionKind, "variable %s", qc)...)
+
+
+	return &items
 }
 
 func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defines.CompletionItem, error) {
@@ -155,7 +228,7 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 
 	parent := closestNode.Parent()
 	if parent != nil {
-		fmt.Println("CLOSEST:", closestNode.Type(), parent.Type())
+		fmt.Println("CLOSEST:", closestNode.Type(), parent.Type(), closestNode.StartPoint(), closestNode.EndPoint())
 	}
 	//do for tumia completions
 	if parent != nil && parent.Type() == "pakeji_tumia_statement" {
@@ -198,7 +271,7 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 
 		// If empty, then show all default tumias, and any file that is a pakeji in
 		// the same directory then return
-		if closestNode.Type() == "tumia" {
+		if closestNode.Type() == "tumia" || closestNode.Type() == "ending" {
 			completionItems := []defines.CompletionItem{}
 			for _, c := range TUMIAS {
 				detail := fmt.Sprintf("pakeji %s", c)
