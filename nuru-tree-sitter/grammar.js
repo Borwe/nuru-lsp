@@ -64,7 +64,7 @@ module.exports = grammar({
       "/*", $.expression, "*/"
     ),
 
-    ending: $ => /;|\n/,
+    ending: $ => /\n|;/,
 
     string_expression: $ => choice(
       seq("\"", /[^\n"]*/, "\""),

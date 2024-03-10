@@ -3,6 +3,7 @@ package tests
 import (
 	"fmt"
 	data_mod "nuru-lsp/data"
+	"nuru-lsp/setup"
 	"runtime"
 	"strings"
 	"testing"
@@ -14,6 +15,7 @@ import (
 func createCompletionParams(t *testing.T,
 	position defines.Position,
 	docInput []string, path *string) (data_mod.Data, defines.CompletionParams) {
+	setup.SetupLog()
 	var file *string = nil
 	if path == nil {
 		if _, file_loc, _, ok := runtime.Caller(0); ok == false {

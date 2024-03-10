@@ -78,7 +78,6 @@ func defaultCompletionGenerator() (*[]defines.CompletionItem, error) {
 
 func CompletionFunc(ctx context.Context,
 	req *defines.CompletionParams) (*[]defines.CompletionItem, error) {
-	logs.Println("CompletionShow:", req)
 
 	file := string(req.TextDocument.Uri)
 	position := req.TextDocumentPositionParams.Position
@@ -94,11 +93,18 @@ func CompletionFunc(ctx context.Context,
 	if found == false {
 		return defaultCompletion, nil
 	}
-	if position.Line >= uint(len(doc.Content)) {
-		logs.Printf("Error: position  %d > file %s of lines %d \n",
-			position.Line, file, len(doc.Content))
+
+	logs.Println("CONTENT:",doc.Content)
+	for _,l := range doc.Content{
+		logs.Println(l)
+	}
+	docCompletions, err := doc.TreeSitterCompletions(req)
+	if err!=nil || docCompletions == nil{
+		logs.Println("WTF? GANI TENA?", err, docCompletions)
 		return defaultCompletion, nil
 	}
+	combined := append(*docCompletions,*defaultCompletion...)
+	defaultCompletion = &combined
 
 	//get the word to be completed
 	wordToCompelte := ""

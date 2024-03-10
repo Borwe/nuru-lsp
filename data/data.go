@@ -56,22 +56,23 @@ func (e ClosesNodeNotFound) Error() string {
 }
 
 func traverseTreeToClosestNamedNode(node *sitter.Node, position defines.Position) (*sitter.Node, error) {
-	fmt.Println("POSS: ",position)
 	row := position.Line
-	//check if start happens ahead
+	//check if node happens inside
 	if node.StartPoint().Row > uint32(row) || node.EndPoint().Row < uint32(row) {
-		fmt.Println("NOT WITHIN ROW", node.StartPoint(), node.EndPoint(), position, node.String())
+		logs.Println("NOT WITHIN ROW ||", node.StartPoint(), node.EndPoint(), position, node.String())
 		return nil, ClosesNodeNotFound("node out happening ahead position")
 	}
 
 	if node.StartPoint().Row == uint32(position.Line) {
 		if node.StartPoint().Column > uint32(position.Character){
-			fmt.Println("NOT WITHIN ROW", node.StartPoint(), node.EndPoint(), position, node.String())
+			logs.Println("NOT WITHIN ROW >", node.StartPoint(), node.EndPoint(), position, node.String())
 			return nil, ClosesNodeNotFound("node out happening before starting collumn")
 		}
+	}
 
-		if node.EndPoint().Column < uint32(position.Character) && node.EndPoint().Row <= uint32(position.Line){
-			fmt.Println("NOT WITHIN ROW", node.StartPoint(), node.EndPoint(), position, node.String())
+	if node.EndPoint().Row == uint32(row) {
+		if node.EndPoint().Column+1 <= uint32(position.Character) {
+			logs.Println("NOT WITHIN ROW <", node.StartPoint(), node.EndPoint(), position, node.String())
 			return nil, ClosesNodeNotFound("node out happening ahead end collumn")
 		}
 	}
@@ -79,11 +80,8 @@ func traverseTreeToClosestNamedNode(node *sitter.Node, position defines.Position
 	count := node.ChildCount()
 
 	//meaning we have reached the last node
-	if count == 0 {
-		return node, nil
-	}
 
-	var resultNode *sitter.Node = nil
+	var resultNode *sitter.Node = node
 	for i := uint32(0); i < count; i++ {
 		result, err := traverseTreeToClosestNamedNode(node.Child(int(i)), position)
 		if err != nil {
@@ -93,23 +91,19 @@ func traverseTreeToClosestNamedNode(node *sitter.Node, position defines.Position
 			resultNode = result
 			continue
 		}
-		distance := (result.StartPoint().Column - uint32(position.Character)) +
-			(uint32(position.Character) - result.EndPoint().Column)
-		distanceResultNode := (resultNode.StartPoint().Column - uint32(position.Character)) +
-			(uint32(position.Character) - resultNode.EndPoint().Column)
 
-		fmt.Println("CURRENT", distance, "LAST RESULT", distanceResultNode)
-		fmt.Println("CURRENT: ", result.Type(),
-			"LAST RESULT", resultNode.Type())
+		distance := (result.EndByte() -  result.StartByte())
+		distanceResultNode := (resultNode.StartByte() -  resultNode.EndByte())
+
+		logs.Println("CURRENT", distance, "LAST RESULT", distanceResultNode)
+		logs.Println("CURRENT: ", result.String(), result.StartPoint(), result.EndPoint(),
+			"LAST RESULT", resultNode.String(), resultNode.StartPoint(), resultNode.EndPoint())
 
 		if distance < distanceResultNode {
 			resultNode = result
 		}
 	}
 
-	if resultNode == nil {
-		return nil, ClosesNodeNotFound("Closes Node not found")
-	}
 	return resultNode, nil
 }
 
@@ -217,21 +211,23 @@ func (d *Data) getAllVariablesAndFunctions() *[]defines.CompletionItem {
 }
 
 func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defines.CompletionItem, error) {
-	fmt.Println("GOT ", d.RootTree.String())
+	logs.Println("GOT ", d.RootTree.String(), d.RootTree.StartPoint(), d.RootTree.EndPoint())
 
+	
 	//query for possible node type at position of completions
-	closestNode, err := traverseTreeToClosestNamedNode(d.RootTree, params.Position)
+	closestNode, err := traverseTreeToClosestNamedNode(d.RootTree, params.TextDocumentPositionParams.Position)
 	if err != nil {
-		fmt.Printf("SHIT %s", err)
+		logs.Printf("SHIT %s %s", err, closestNode)
 		return nil, err
 	}
 
 	parent := closestNode.Parent()
 	if parent != nil {
-		fmt.Println("CLOSEST:", closestNode.Type(), parent.Type(), closestNode.StartPoint(), closestNode.EndPoint())
+		logs.Println("CLOSEST WITH PARENT:", closestNode.Type(), parent.Type(), closestNode.StartPoint(), closestNode.EndPoint())
 	}
+		logs.Println("CLOSEST:", closestNode.Type(), closestNode.StartPoint(), closestNode.EndPoint())
 	//do for tumia completions
-	if parent != nil && parent.Type() == "pakeji_tumia_statement" {
+	if (parent != nil && parent.Type() == "pakeji_tumia_statement") || closestNode.PrevSibling()!=nil && closestNode.PrevSibling().Type() == "tumia" {
 		//get the identifier if any, then search files in same directory
 		// if they match value given, also check default tumias available
 		// by the nuru native.
@@ -271,7 +267,7 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 
 		// If empty, then show all default tumias, and any file that is a pakeji in
 		// the same directory then return
-		if closestNode.Type() == "tumia" || closestNode.Type() == "ending" {
+		if closestNode.Type() == "tumia" {
 			completionItems := []defines.CompletionItem{}
 			for _, c := range TUMIAS {
 				detail := fmt.Sprintf("pakeji %s", c)
@@ -306,6 +302,7 @@ func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defin
 		completions := d.getAllVariablesAndFunctions()
 		return completions, nil
 	default:
+		logs.Println("YOLO!!!!", closestNode.Type())
 		fmt.Println("SHHHIIIT")
 	}
 	return nil, ClosesNodeNotFound("Failed to find element")
@@ -421,6 +418,24 @@ func parseAndNotifyErrors(doc *Data, uri defines.DocumentUri) {
 	//now go line after line adding variables to scope
 }
 
+func ReadLine(in string)string{
+	out := strings.Split(in,"\r\n")
+	out = strings.Split(out[0],"\n")
+	return out[0]
+}
+
+func ReadContents(text string)[]string{
+	content := []string{}
+	lines := strings.Split(text, "\r\n")
+	for _, line := range lines {
+		sublines := strings.Split(line, "\n")
+		for _, l := range sublines {
+			content = append(content, l)
+		}
+	}
+	return content
+}
+
 func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
 	PagesMutext.Lock()
 	defer PagesMutext.Unlock()
@@ -431,21 +446,10 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 		return nil
 	}
 
-	//check if it exists
-	_, err = os.Stat(parsed.Path)
-	if os.IsNotExist(err) {
-		return nil
-	}
-
 	//we reach here means it exists, so open file and read it line by line
-
 	//read content of file line by line
-	content := strings.Split(req.TextDocument.Text, "\n")
+	content := ReadContents(req.TextDocument.Text)
 
-	if len(content) == 0 {
-		//empty file
-		return nil
-	}
 	doc, err := NewData(parsed.Path, 0, content)
 	if err != nil {
 		return nil
@@ -467,9 +471,9 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 	doc, found := Pages[file]
 	if !found {
 		content := []string{}
-		for _, v := range req.ContentChanges {
-			content = append(content, fmt.Sprint(v.Text))
-		}
+			logs.Println("WEWEWEWE",ReadContents(fmt.Sprint(req.ContentChanges[0].Text)))
+			logs.Println("RERERERE",len(req.ContentChanges))
+			content = append(content, ReadContents(fmt.Sprint(req.ContentChanges[0].Text))...)
 		docnew, _ := NewData(string(req.TextDocument.Uri), uint64(req.TextDocument.Version), content)
 		doc = *docnew
 
@@ -477,9 +481,7 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 		if doc.Version < uint64(req.TextDocument.Version) {
 			doc.Version = uint64(req.TextDocument.Version)
 			content := []string{}
-			for _, v := range req.ContentChanges {
-				content = append(content, fmt.Sprint(v.Text))
-			}
+			content = append(content, ReadContents(fmt.Sprint(req.ContentChanges[0].Text))...)
 			doc.Content = content
 		}
 	}
