@@ -30,16 +30,16 @@ type Data struct {
 	Version  uint64
 	Errors   ErrorMapLineNumbers
 	Content  []string
-	RootTree *[]ast.Statement
+	RootTree *ast.Node
 }
 
 var Pages = make(map[string]Data)
 var PagesMutext = sync.Mutex{}
 
-func ParseTree(parser *parser.Parser) ([]ast.Statement, []string) {
+func ParseTree(parser *parser.Parser) (ast.Node, []string) {
 	ast := parser.ParseProgram()
 	errorsList := parser.Errors()
-	return ast.Statements, errorsList
+	return ast, errorsList
 }
 
 type ClosesNodeNotFound string
@@ -48,7 +48,43 @@ func (e ClosesNodeNotFound) Error() string {
 	return string(e)
 }
 
+func parseWordBackFromPosition(line []rune, pos int) *string{
+	word := []rune{}
+	startedGettingWords := false
+	for i:=pos; i>=0; i-- {
+		if line[i] == ' ' && startedGettingWords {
+			break;
+		}
+
+		if !startedGettingWords && line[i] != ' '{
+			startedGettingWords = true
+		}
+		word = append([]rune{line[i]},word...)
+	}
+	tmp := string(word)
+	return &tmp
+}
+
 func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines.CompletionItem, error){
+	//get current word, otherwise get previous
+	var word *string = nil
+
+	for no, line := range d.Content{
+		if no != int(completeParams.Position.Line-1){
+			continue
+		}
+		//-1 because files consider column 1 as index 0
+		charPos := completeParams.Position.Character-2
+		runed := []rune(line)
+		if charPos>0 {
+			//parse the full word,
+			word = parseWordBackFromPosition(runed, int(charPos))
+		}
+	}
+
+	if(word==nil){
+		return nil, errors.New("NOT IMPLEMENTED BASIC COMPLETION") 
+	}
 	return nil, errors.New("NOT IMPLEMENTED")
 }
 
