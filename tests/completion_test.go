@@ -48,7 +48,7 @@ func TestTumiaCompletionNoIdentifier(t *testing.T) {
 		Character: 5,
 	}, []string{"tumia "}, nil)
 
-	items, err := data.TreeSitterCompletions(&completionParams)
+	items, err := data.Completions(&completionParams)
 	assert.Nil(t, err)
 	tumias := append(data_mod.TUMIAS, "test", "full_pakeji")
 
@@ -69,7 +69,7 @@ func TestTumiaCompletionWithIdentifier(t *testing.T) {
 		Character: 6,
 	}, []string{"tumia t"}, nil)
 
-	items, err := data.TreeSitterCompletions(&completionParams)
+	items, err := data.Completions(&completionParams)
 	assert.Nil(t, err)
 
 	//fill tumias
@@ -106,7 +106,7 @@ func TestVariableFunctionCompletionWithoutIdentifier(t *testing.T) {
 		"",
 	}, nil)
 
-	items, err := data.TreeSitterCompletions(&completionParams)
+	items, err := data.Completions(&completionParams)
 	assert.Nil(t, err)
 
 	//fill completions expected
