@@ -98,7 +98,7 @@ func CompletionFunc(ctx context.Context,
 	for _,l := range doc.Content{
 		logs.Println(l)
 	}
-	docCompletions, err := doc.TreeSitterCompletions(req)
+	docCompletions, err := doc.Completions(req)
 	if err!=nil || docCompletions == nil{
 		logs.Println("WTF? GANI TENA?", err, docCompletions)
 		return defaultCompletion, nil

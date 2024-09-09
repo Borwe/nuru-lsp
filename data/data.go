@@ -5,21 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"nuru-lsp/consts"
-	nuru_tree_sitter "nuru-lsp/nuru-tree-sitter"
 	"nuru-lsp/server"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 	"unicode"
 
+	"github.com/AvicennaJr/Nuru/ast"
 	"github.com/AvicennaJr/Nuru/lexer"
 	"github.com/AvicennaJr/Nuru/parser"
 	"github.com/Borwe/go-lsp/logs"
 	"github.com/Borwe/go-lsp/lsp/defines"
-	sitter "github.com/smacker/go-tree-sitter"
 )
 
 var TUMIAS []string = []string{
@@ -34,19 +30,16 @@ type Data struct {
 	Version  uint64
 	Errors   ErrorMapLineNumbers
 	Content  []string
-	RootTree *sitter.Node
+	RootTree *[]ast.Statement
 }
 
 var Pages = make(map[string]Data)
 var PagesMutext = sync.Mutex{}
 
-func ParseTree(lines []string) (*sitter.Node, error) {
-	data := strings.Join(lines, "\n")
-	data = data + "\n"
-	node, err := sitter.ParseCtx(context.Background(),
-		[]byte(data),
-		nuru_tree_sitter.GetLanguage())
-	return node, err
+func ParseTree(parser *parser.Parser) ([]ast.Statement, []string) {
+	ast := parser.ParseProgram()
+	errorsList := parser.Errors()
+	return ast.Statements, errorsList
 }
 
 type ClosesNodeNotFound string
@@ -55,274 +48,34 @@ func (e ClosesNodeNotFound) Error() string {
 	return string(e)
 }
 
-func traverseTreeToClosestNamedNode(node *sitter.Node, position defines.Position) (*sitter.Node, error) {
-	row := position.Line
-	//check if node happens inside
-	if node.StartPoint().Row > uint32(row) || node.EndPoint().Row < uint32(row) {
-		logs.Println("NOT WITHIN ROW ||", node.StartPoint(), node.EndPoint(), position, node.String())
-		return nil, ClosesNodeNotFound("node out happening ahead position")
-	}
-
-	if node.StartPoint().Row == uint32(position.Line) {
-		if node.StartPoint().Column > uint32(position.Character){
-			logs.Println("NOT WITHIN ROW >", node.StartPoint(), node.EndPoint(), position, node.String())
-			return nil, ClosesNodeNotFound("node out happening before starting collumn")
-		}
-	}
-
-	if node.EndPoint().Row == uint32(row) {
-		if node.EndPoint().Column+1 <= uint32(position.Character) {
-			logs.Println("NOT WITHIN ROW <", node.StartPoint(), node.EndPoint(), position, node.String())
-			return nil, ClosesNodeNotFound("node out happening ahead end collumn")
-		}
-	}
-
-	count := node.ChildCount()
-
-	//meaning we have reached the last node
-
-	var resultNode *sitter.Node = node
-	for i := uint32(0); i < count; i++ {
-		result, err := traverseTreeToClosestNamedNode(node.Child(int(i)), position)
-		if err != nil {
-			continue
-		}
-		if resultNode == nil {
-			resultNode = result
-			continue
-		}
-
-		distance := (result.EndByte() -  result.StartByte())
-		distanceResultNode := (resultNode.StartByte() -  resultNode.EndByte())
-
-		logs.Println("CURRENT", distance, "LAST RESULT", distanceResultNode)
-		logs.Println("CURRENT: ", result.String(), result.StartPoint(), result.EndPoint(),
-			"LAST RESULT", resultNode.String(), resultNode.StartPoint(), resultNode.EndPoint())
-
-		if distance < distanceResultNode {
-			resultNode = result
-		}
-	}
-
-	return resultNode, nil
-}
-
-func (d *Data) GetModulesInDir() []string {
-	modules := []string{}
-	filepath.Walk(filepath.Dir(d.File), func(path string, info os.FileInfo, _err error) error {
-		name := strings.Split(info.Name(), ".")
-		ending := name[len(name)-1]
-		if !info.IsDir() && (ending == "nr" || ending == "sr") {
-			var data_to_use *Data
-			if data, found := Pages[path]; found == false {
-				bytes, err := os.ReadFile(path)
-				if err != nil {
-					return nil
-				}
-				data := strings.Split(string(bytes), "\n")
-				data_to_use, err = NewData(path, 0, data)
-				if err != nil {
-					return nil
-				}
-			} else {
-				data_to_use = &data
-			}
-
-			root := data_to_use.RootTree
-			q, err := sitter.NewQuery([]byte(consts.HII_NI_PAKEJI), nuru_tree_sitter.GetLanguage())
-			if err != nil {
-				fmt.Println("WTF", err)
-				return nil
-			}
-			qc := sitter.NewQueryCursor()
-			qc.Exec(q, root)
-
-			if _, ok := qc.NextMatch(); ok == true {
-				modules = append(modules, name[0])
-			}
-		}
-		return nil
-	})
-
-	return modules
-}
-
-func getItems(dataRaw *[]byte,kind *defines.CompletionItemKind, detail string,
-	cursor *sitter.QueryCursor)[]defines.CompletionItem{
-	items := []defines.CompletionItem{}
-	for {
-		m, ok := cursor.NextMatch()
-		if !ok {
-			break;
-		}
-		for _, c := range m.Captures{
-			itemString := c.Node.Content(*dataRaw)
-			detail := fmt.Sprintf(detail,itemString)
-			items = append(items, defines.CompletionItem{
-				Label: itemString,
-				Detail: &detail,
-				Kind: kind,
-				InsertText: &itemString,
-			})
-		}
-	}
-
-	return items
+func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines.CompletionItem, error){
+	return nil, errors.New("NOT IMPLEMENTED")
 }
 
 func (d *Data) getAllVariablesAndFunctions() *[]defines.CompletionItem {
-	dataRaw := []byte(strings.Join(d.Content,"\n"))
-	items := []defines.CompletionItem{}
-	//get all usage pakeji statements
-	q, err := sitter.NewQuery([]byte(consts.TMUIA_PAEKJI_QUERY), nuru_tree_sitter.GetLanguage())
-	if err!=nil {
-		logs.Println("ERROR, FUCK",err)
-		return &items
-	}
-	qc := sitter.NewQueryCursor()
-	qc.Exec(q, d.RootTree)
-	completionKind := defines.CompletionItemKind(defines.CompletionItemKindModule)
-	items = append(items, getItems(&dataRaw, &completionKind, "pakeji %s", qc)...)
-
-	//get functions
-	q, err = sitter.NewQuery([]byte(consts.FUNCTION_DECLARATION_QUERY), nuru_tree_sitter.GetLanguage())
-	if err!=nil {
-		logs.Println("ERROR, FUCK",err)
-		return &items
-	}
-	qc = sitter.NewQueryCursor()
-	qc.Exec(q, d.RootTree)
-	completionKind = defines.CompletionItemKind(defines.CompletionItemKindFunction)
-	items = append(items, getItems(&dataRaw, &completionKind, "function %s", qc)...)
-
-	//get variables
-	q, err = sitter.NewQuery([]byte(consts.VARIABLE_DECLARATION_QUERY), nuru_tree_sitter.GetLanguage())
-	if err!=nil {
-		logs.Println("ERROR, FUCK",err)
-		return &items
-	}
-	qc = sitter.NewQueryCursor()
-	qc.Exec(q, d.RootTree)
-	completionKind = defines.CompletionItemKind(defines.CompletionItemKindVariable)
-	items = append(items, getItems(&dataRaw, &completionKind, "variable %s", qc)...)
-
-
-	return &items
-}
-
-func (d *Data) TreeSitterCompletions(params *defines.CompletionParams) (*[]defines.CompletionItem, error) {
-	logs.Println("GOT ", d.RootTree.String(), d.RootTree.StartPoint(), d.RootTree.EndPoint())
-
-	
-	//query for possible node type at position of completions
-	closestNode, err := traverseTreeToClosestNamedNode(d.RootTree, params.TextDocumentPositionParams.Position)
-	if err != nil {
-		logs.Printf("SHIT %s %s", err, closestNode)
-		return nil, err
-	}
-
-	parent := closestNode.Parent()
-	if parent != nil {
-		logs.Println("CLOSEST WITH PARENT:", closestNode.Type(), parent.Type(), closestNode.StartPoint(), closestNode.EndPoint())
-	}
-		logs.Println("CLOSEST:", closestNode.Type(), closestNode.StartPoint(), closestNode.EndPoint())
-	//do for tumia completions
-	if (parent != nil && parent.Type() == "pakeji_tumia_statement") || closestNode.PrevSibling()!=nil && closestNode.PrevSibling().Type() == "tumia" {
-		//get the identifier if any, then search files in same directory
-		// if they match value given, also check default tumias available
-		// by the nuru native.
-		if closestNode.Type() == "identifier" {
-			identifier := closestNode.Content([]byte(strings.Join(d.Content, "")))
-			completionItems := []defines.CompletionItem{}
-			for _, c := range TUMIAS {
-				if strings.Contains(c, identifier) {
-					detail := fmt.Sprintf("pakeji %s", c)
-					kind := defines.CompletionItemKind(defines.CompletionItemKindModule)
-					completionItems = append(completionItems,
-						defines.CompletionItem{
-							Label:      c,
-							Detail:     &detail,
-							InsertText: &c,
-							Kind:       &kind,
-						})
-				}
-			}
-
-			for _, module := range d.GetModulesInDir() {
-				if strings.Contains(module, identifier) {
-					detail := fmt.Sprintf("pakeji %s", module)
-					kind := defines.CompletionItemKind(defines.CompletionItemKindModule)
-					completionItems = append(completionItems,
-						defines.CompletionItem{
-							Label:      module,
-							Detail:     &detail,
-							InsertText: &module,
-							Kind:       &kind,
-						})
-				}
-			}
-
-			return &completionItems, nil
-		}
-
-		// If empty, then show all default tumias, and any file that is a pakeji in
-		// the same directory then return
-		if closestNode.Type() == "tumia" {
-			completionItems := []defines.CompletionItem{}
-			for _, c := range TUMIAS {
-				detail := fmt.Sprintf("pakeji %s", c)
-				kind := defines.CompletionItemKind(defines.CompletionItemKindModule)
-				completionItems = append(completionItems,
-					defines.CompletionItem{
-						Label:      c,
-						Detail:     &detail,
-						InsertText: &c,
-						Kind:       &kind,
-					})
-			}
-
-			for _, module := range d.GetModulesInDir() {
-				detail := fmt.Sprintf("pakeji %s", module)
-				kind := defines.CompletionItemKind(defines.CompletionItemKindModule)
-				completionItems = append(completionItems,
-					defines.CompletionItem{
-						Label:      module,
-						Detail:     &detail,
-						InsertText: &module,
-						Kind:       &kind,
-					})
-			}
-
-			return &completionItems, nil
-		}
-	}
-	closestType := closestNode.Type()
-	switch closestType {
-	case "ending":
-		completions := d.getAllVariablesAndFunctions()
-		return completions, nil
-	default:
-		logs.Println("YOLO!!!!", closestNode.Type())
-		fmt.Println("SHHHIIIT")
-	}
-	return nil, ClosesNodeNotFound("Failed to find element")
+	result := make([]defines.CompletionItem, 1)
+	return &result
 }
 
 func NewData(file string, version uint64, content []string) (*Data, error) {
-	root, err := ParseTree(content)
-	if err != nil {
-		return nil, err
-	}
+	lexer := lexer.New(strings.Join(content, ""))
+	parser := parser.New(lexer)
+	root, errs := ParseTree(parser)
 
-	Pages[file] = Data{
+	data := Data{
 		File:     file,
 		Version:  version,
 		Errors:   make(ErrorMapLineNumbers, 0),
 		Content:  content,
-		RootTree: root,
+		RootTree: &root,
 	}
 
-	data := Pages[file]
+	if len(errs) > 0 {
+		notifyErrors(&data, errs)
+	}
+
+	Pages[file] = data
+	data = Pages[file]
 
 	return &data, nil
 }
@@ -366,6 +119,48 @@ func parseErrorFromParser(error string) (uint, *string, *error) {
 
 func OnDidClose(ctx context.Context, req *defines.DidCloseTextDocumentParams) (err error) {
 	return nil
+}
+
+func notifyErrors(doc *Data, errors []string) {
+	if len(errors) > 0 {
+		for _, e := range errors {
+			pos, line, err := parseErrorFromParser(e)
+			if err != nil {
+				logs.Printf("Error parsing errors: %s\n", *err)
+				return
+			}
+			errorsList := doc.Errors[pos]
+			doc.Errors[pos] = append(errorsList, *line)
+		}
+	}
+	//if errors not empty, now send them over to client
+	diagnostics := make([]defines.Diagnostic, 0)
+	for k, v := range doc.Errors {
+		for _, e := range v {
+			var endChar uint = 0
+			if k < uint(len(doc.Content)) {
+				endChar = uint(len(doc.Content[k-1]))
+			}
+			diagnostics = append(diagnostics, defines.Diagnostic{
+				Message: e,
+				Range: defines.Range{
+					Start: defines.Position{
+						Line:      k,
+						Character: 0,
+					},
+					End: defines.Position{
+						Line:      k,
+						Character: endChar,
+					},
+				},
+			})
+		}
+	}
+	publishDiag := defines.PublishDiagnosticsParams{
+		Uri:         defines.DocumentUri(doc.File),
+		Diagnostics: diagnostics,
+	}
+	server.Notify(server.Server, "textDocument/publishDiagnostics", publishDiag)
 }
 
 func parseAndNotifyErrors(doc *Data, uri defines.DocumentUri) {
@@ -418,13 +213,13 @@ func parseAndNotifyErrors(doc *Data, uri defines.DocumentUri) {
 	//now go line after line adding variables to scope
 }
 
-func ReadLine(in string)string{
-	out := strings.Split(in,"\r\n")
-	out = strings.Split(out[0],"\n")
+func ReadLine(in string) string {
+	out := strings.Split(in, "\r\n")
+	out = strings.Split(out[0], "\n")
 	return out[0]
 }
 
-func ReadContents(text string)[]string{
+func ReadContents(text string) []string {
 	content := []string{}
 	lines := strings.Split(text, "\r\n")
 	for _, line := range lines {
@@ -471,9 +266,9 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 	doc, found := Pages[file]
 	if !found {
 		content := []string{}
-			logs.Println("WEWEWEWE",ReadContents(fmt.Sprint(req.ContentChanges[0].Text)))
-			logs.Println("RERERERE",len(req.ContentChanges))
-			content = append(content, ReadContents(fmt.Sprint(req.ContentChanges[0].Text))...)
+		logs.Println("WEWEWEWE", ReadContents(fmt.Sprint(req.ContentChanges[0].Text)))
+		logs.Println("RERERERE", len(req.ContentChanges))
+		content = append(content, ReadContents(fmt.Sprint(req.ContentChanges[0].Text))...)
 		docnew, _ := NewData(string(req.TextDocument.Uri), uint64(req.TextDocument.Version), content)
 		doc = *docnew
 
