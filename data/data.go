@@ -4,8 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/url"
 	"nuru-lsp/server"
+	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -48,44 +52,259 @@ func (e ClosesNodeNotFound) Error() string {
 	return string(e)
 }
 
-func parseWordBackFromPosition(line []rune, pos int) *string{
+func parseWordBackFromPosition(line []rune, pos int) *string {
 	word := []rune{}
 	startedGettingWords := false
-	for i:=pos; i>=0; i-- {
+	for i := pos; i >= 0; i-- {
 		if line[i] == ' ' && startedGettingWords {
-			break;
+			break
 		}
 
-		if !startedGettingWords && line[i] != ' '{
+		if !startedGettingWords && line[i] != ' ' {
 			startedGettingWords = true
+		} else if !startedGettingWords {
+			continue
 		}
-		word = append([]rune{line[i]},word...)
+		word = append([]rune{line[i]}, word...)
 	}
 	tmp := string(word)
 	return &tmp
 }
 
-func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines.CompletionItem, error){
+func checkFileIsPackage(dir string, f fs.DirEntry) bool {
+	info, err := f.Info()
+	if info.IsDir() || err != nil {
+		return false
+	}
+
+	fName := f.Name()
+	extention := fName[len(fName)-2:]
+	if len(fName) > 3 && (extention != "nr" ) {
+		return false
+	}
+
+	fpath := filepath.Join(dir, f.Name())
+	data, ok := Pages[fpath]
+	if !ok {
+		linesBytes, err := os.ReadFile(fpath)
+		if err != nil {
+			return false
+		}
+		lines := strings.Split(string(linesBytes), "\n")
+		tmp, err := NewData(fpath, 0, lines)
+		if err != nil {
+			return false
+		}
+		Pages[fpath] = *tmp
+		data = Pages[fpath]
+	}
+	pakejiAsts := &[]*ast.Package{}
+	getAsts(*data.RootTree, &pakejiAsts)
+
+	if len(*pakejiAsts) > 0 {
+		return true
+	}
+
+
+	return false
+}
+
+func getAsts[T ast.Node](node ast.Node, result **[]T) {
+	switch node := node.(type) {
+	case T:
+		tmp := append(**result, node)
+		*result = &tmp
+		break
+	case *ast.Program:
+		for _, stmt := range node.Statements {
+			getAsts(stmt, result)
+		}
+		break
+
+	case *ast.ExpressionStatement:
+		getAsts(node.Expression, result)
+		break
+	case *ast.IntegerLiteral:
+	case *ast.FloatLiteral:
+	case *ast.Boolean:
+		break
+	case *ast.PrefixExpression:
+		getAsts(node.Right, result)
+		break
+	case *ast.InfixExpression:
+		getAsts(node.Left, result)
+		getAsts(node.Right, result)
+		break
+	case *ast.PostfixExpression:
+		break
+	case *ast.BlockStatement:
+		for _, stmt := range node.Statements {
+			getAsts(stmt, result)
+		}
+		break
+	case *ast.IfExpression:
+		getAsts(node.Condition, result)
+		getAsts(node.Alternative, result)
+		getAsts(node.Consequence, result)
+		break
+	case *ast.ReturnStatement:
+		getAsts(node.ReturnValue, result)
+		break
+	case *ast.LetStatement:
+		getAsts(node.Value, result)
+		break
+	case *ast.Identifier:
+		break
+	case *ast.FunctionLiteral:
+		getAsts(node.Body, result)
+		for _, stmt := range node.Parameters {
+			getAsts(stmt, result)
+		}
+		for _, stmt := range node.Defaults {
+			getAsts(stmt, result)
+		}
+		break
+	case *ast.MethodExpression:
+		getAsts(node.Object, result)
+		getAsts(node.Method, result)
+		for _, stmt := range node.Defaults {
+			getAsts(stmt, result)
+		}
+		for _, stmt := range node.Arguments {
+			getAsts(stmt, result)
+		}
+		break
+	case *ast.Import:
+		for _, stmt := range node.Identifiers {
+			getAsts(stmt, result)
+		}
+		break
+	case *ast.CallExpression:
+		getAsts(node.Function, result)
+		for _, stmt := range node.Arguments {
+			getAsts(stmt, result)
+		}
+		break
+	case *ast.StringLiteral:
+		break
+	case *ast.At:
+		break
+	case *ast.ArrayLiteral:
+		for _, stmt := range node.Elements {
+			getAsts(stmt, result)
+		}
+		break
+	case *ast.IndexExpression:
+		getAsts(node.Left, result)
+		getAsts(node.Index, result)
+		break
+	case *ast.DictLiteral:
+		for stmt1, stmt2 := range node.Pairs {
+			getAsts(stmt1, result)
+			getAsts(stmt2, result)
+		}
+		break
+	case *ast.WhileExpression:
+		getAsts(node.Condition, result)
+		getAsts(node.Consequence, result)
+		break
+	case *ast.Break:
+	case *ast.Continue:
+		break
+	case *ast.SwitchExpression:
+		getAsts(node.Value, result)
+		for _, stmt := range node.Choices {
+			getAsts(stmt, result)
+		}
+		break
+	case *ast.Null:
+		break
+	case *ast.ForIn:
+		getAsts(node.Iterable, result)
+		getAsts(node.Block, result)
+		break
+	case *ast.Package:
+		getAsts(node.Name, result)
+		getAsts(node.Block, result)
+		break
+	case *ast.PropertyExpression:
+		getAsts(node.Object, result)
+		getAsts(node.Property, result)
+		break
+	case *ast.PropertyAssignment:
+		getAsts(node.Name, result)
+		getAsts(node.Value, result)
+		break
+	case *ast.Assign:
+		getAsts(node.Name, result)
+		getAsts(node.Value, result)
+		break
+	case *ast.AssignEqual:
+		getAsts(node.Left, result)
+		getAsts(node.Value, result)
+		break
+	case *ast.AssignmentExpression:
+		getAsts(node.Left, result)
+		getAsts(node.Value, result)
+		break
+	}
+}
+
+func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines.CompletionItem, error) {
 	//get current word, otherwise get previous
 	var word *string = nil
 
-	for no, line := range d.Content{
-		if no != int(completeParams.Position.Line-1){
+	for no, line := range d.Content {
+		if no != int(completeParams.Position.Line-1) {
 			continue
 		}
 		//-1 because files consider column 1 as index 0
-		charPos := completeParams.Position.Character-2
+		charPos := completeParams.Position.Character - 2
 		runed := []rune(line)
-		if charPos>0 {
+		if charPos > 0 {
 			//parse the full word,
 			word = parseWordBackFromPosition(runed, int(charPos))
 		}
 	}
 
-	if(word==nil){
-		return nil, errors.New("NOT IMPLEMENTED BASIC COMPLETION") 
+	if word == nil {
+		return nil, errors.New("NOT IMPLEMENTED BASIC COMPLETION")
 	}
-	return nil, errors.New("NOT IMPLEMENTED")
+
+	switch *word {
+	case "tumia":
+		//get all files in directory of current data
+		packajiFiles := []string{}
+		dir := path.Dir(d.File)
+		files, error := os.ReadDir(dir)
+		if error == nil {
+			//meaning we have files
+			for _, file := range files {
+				if checkFileIsPackage(dir, file) {
+					name := file.Name()
+					packajiFiles = append(packajiFiles, file.Name()[:len(name)-3])
+				}
+			}
+		}
+		completions := []defines.CompletionItem{}
+		pakejiInfo := "Ni pajeji"
+		for _, pakeji := range packajiFiles {
+			completions = append(completions, defines.CompletionItem{
+				Label: pakeji,
+				LabelDetails: &defines.CompletionItemLabelDetails{Detail: &pakejiInfo},
+			})
+		}
+		for _, tumia := range TUMIAS {
+			completions = append(completions, defines.CompletionItem{
+				Label: tumia,
+				LabelDetails: &defines.CompletionItemLabelDetails{Detail: &pakejiInfo},
+			})
+		}
+		return &completions, nil 
+	default:
+		return nil, errors.New("NOT IMPLEMENTED")
+	}
+
 }
 
 func (d *Data) getAllVariablesAndFunctions() *[]defines.CompletionItem {
