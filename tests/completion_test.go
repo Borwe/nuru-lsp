@@ -14,7 +14,7 @@ import (
 
 func createCompletionParams(t *testing.T,
 	position defines.Position,
-	docInput []string, path *string) (data_mod.Data, defines.CompletionParams) {
+	docInput []string, path *string) (data_mod.Data, defines.CompletionParams, []string) {
 	setup.SetupLog()
 	var file *url.URL = nil
 	if path == nil {
@@ -35,7 +35,7 @@ func createCompletionParams(t *testing.T,
 
 	assert.NotNil(t, file)
 	assert.NotEqual(t, 0, len(file.Path))
-	data, _ := data_mod.NewData(file.String(), 0, docInput)
+	data, _, errs := data_mod.NewData(file.String(), 0, docInput)
 
 	return *data, defines.CompletionParams{
 		TextDocumentPositionParams: defines.TextDocumentPositionParams{
@@ -44,12 +44,12 @@ func createCompletionParams(t *testing.T,
 			},
 			Position: position,
 		},
-	}
+	}, errs
 }
 
 func TestTumiaCompletionNoIdentifier(t *testing.T) {
 	//create a completions params
-	data, completionParams := createCompletionParams(t, defines.Position{
+	data, completionParams, _ := createCompletionParams(t, defines.Position{
 		Line:      0,
 		Character: 6,
 	}, []string{"tumia "}, nil)

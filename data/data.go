@@ -94,8 +94,8 @@ func checkFileIsPackage(dir string, f fs.DirEntry) bool {
 			return false
 		}
 		lines := strings.Split(string(linesBytes), "\n")
-		tmp, err := NewData(fpath, 0, lines)
-		if err != nil {
+		tmp, err, errs := NewData(fpath, 0, lines)
+		if err != nil || len(errs)>0 {
 			return false
 		}
 		Pages[fpath] = *tmp
@@ -320,7 +320,7 @@ func (d *Data) getAllVariablesAndFunctions() *[]defines.CompletionItem {
 	return &result
 }
 
-func NewData(file string, version uint64, content []string) (*Data, error) {
+func NewData(file string, version uint64, content []string) (*Data, error, []string) {
 	lexer := lexer.New(strings.Join(content, ""))
 	parser := parser.New(lexer)
 	root, errs := ParseTree(parser)
@@ -331,7 +331,7 @@ func NewData(file string, version uint64, content []string) (*Data, error) {
 
 	fileUrl, err := url.Parse(file)
 	if err!=nil {
-		return nil, err
+		return nil, err, errs
 	}
 
 	file = fileUrl.Path
@@ -347,14 +347,10 @@ func NewData(file string, version uint64, content []string) (*Data, error) {
 		RootTree: &root,
 	}
 
-	if len(errs) > 0 {
-		return nil, errors.New(fmt.Sprintf("File %s has errors", file))
-	}
-
 	Pages[file] = data
 	data = Pages[file]
 
-	return &data, nil
+	return &data, nil, errs
 }
 
 func parseErrorFromParser(error string) (uint, *string, *error) {
@@ -528,13 +524,13 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 	//read content of file line by line
 	content := ReadContents(req.TextDocument.Text)
 
-	doc, err := NewData(parsed.Path, 0, content)
+	doc, err, errs := NewData(parsed.Path, 0, content)
 	if err != nil {
 		return nil
 	}
 
 	//do diagnostics here on the file
-	parseAndNotifyErrors(doc, req.TextDocument.Uri)
+	notifyErrors(doc, errs)
 
 	logs.Printf("NURULSP DONE Opened file-> %s\n", parsed.Path)
 	return nil
@@ -546,13 +542,16 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 
 	file := string(req.TextDocument.Uri)
 
+	errs := []string{}
+
 	doc, found := Pages[file]
 	if !found {
 		content := []string{}
 		logs.Println("WEWEWEWE", ReadContents(fmt.Sprint(req.ContentChanges[0].Text)))
 		logs.Println("RERERERE", len(req.ContentChanges))
 		content = append(content, ReadContents(fmt.Sprint(req.ContentChanges[0].Text))...)
-		docnew, _ := NewData(string(req.TextDocument.Uri), uint64(req.TextDocument.Version), content)
+		docnew, _, errsDoc := NewData(string(req.TextDocument.Uri), uint64(req.TextDocument.Version), content)
+		errs = errsDoc
 		doc = *docnew
 
 	} else {
@@ -564,7 +563,7 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 		}
 	}
 
-	parseAndNotifyErrors(&doc, req.TextDocument.Uri)
+	notifyErrors(&doc, errs)
 
 	Pages[file] = doc
 
