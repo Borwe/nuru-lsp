@@ -88,12 +88,12 @@ func CompletionFunc(ctx context.Context,
 	defer data.PagesMutext.Unlock()
 
 	doc, found := data.Pages[file]
-	//check if such a doc was already included, if not just skip to do
-	//default evaluation with hints
+
 	if found == false {
 		return defaultCompletion, nil
 	}
 
+	logs.Println("POSITIONS:", req.Position)
 	logs.Println("CONTENT:",doc.Content)
 	for _,l := range doc.Content{
 		logs.Println(l)
@@ -103,8 +103,10 @@ func CompletionFunc(ctx context.Context,
 		logs.Println("WTF? GANI TENA?", err, docCompletions)
 		return defaultCompletion, nil
 	}
-	combined := append(*docCompletions,*defaultCompletion...)
-	defaultCompletion = &combined
+
+	if len(*docCompletions)>0 {
+		return docCompletions, nil
+	}
 
 	//get the word to be completed
 	wordToCompelte := ""

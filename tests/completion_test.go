@@ -1,8 +1,10 @@
 package tests
 
 import (
+	"net/url"
 	data_mod "nuru-lsp/data"
 	"nuru-lsp/setup"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -14,25 +16,31 @@ func createCompletionParams(t *testing.T,
 	position defines.Position,
 	docInput []string, path *string) (data_mod.Data, defines.CompletionParams) {
 	setup.SetupLog()
-	var file *string = nil
+	var file *url.URL = nil
 	if path == nil {
 		if _, file_loc, _, ok := runtime.Caller(0); ok == false {
 			t.Fatal("Failed to get dir of current package")
 		} else {
-			file = &file_loc
+			file = &url.URL{
+				Scheme: "file",
+				Path: filepath.ToSlash(file_loc),
+			}
 		}
 	} else {
-		file = path
+		file = &url.URL{
+				Scheme: "file",
+				Path: filepath.ToSlash(*path),
+			}
 	}
 
 	assert.NotNil(t, file)
-	assert.NotEqual(t, 0, len(*file))
-	data, _ := data_mod.NewData(*file, 0, docInput)
+	assert.NotEqual(t, 0, len(file.Path))
+	data, _ := data_mod.NewData(file.String(), 0, docInput)
 
 	return *data, defines.CompletionParams{
 		TextDocumentPositionParams: defines.TextDocumentPositionParams{
 			TextDocument: defines.TextDocumentIdentifier{
-				Uri: defines.DocumentUri(*file),
+				Uri: defines.DocumentUri(file.String()),
 			},
 			Position: position,
 		},
@@ -42,8 +50,8 @@ func createCompletionParams(t *testing.T,
 func TestTumiaCompletionNoIdentifier(t *testing.T) {
 	//create a completions params
 	data, completionParams := createCompletionParams(t, defines.Position{
-		Line:      1,
-		Character: 7,
+		Line:      0,
+		Character: 6,
 	}, []string{"tumia "}, nil)
 
 	items, err := data.Completions(&completionParams)

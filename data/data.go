@@ -83,7 +83,10 @@ func checkFileIsPackage(dir string, f fs.DirEntry) bool {
 		return false
 	}
 
+
 	fpath := filepath.Join(dir, f.Name())
+	logs.Println("DIR:",f)
+	logs.Println("DIRFPATH:",fpath)
 	data, ok := Pages[fpath]
 	if !ok {
 		linesBytes, err := os.ReadFile(fpath)
@@ -255,11 +258,11 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 	var word *string = nil
 
 	for no, line := range d.Content {
-		if no != int(completeParams.Position.Line-1) {
+		if no != int(completeParams.Position.Line) {
 			continue
 		}
 		//-1 because files consider column 1 as index 0
-		charPos := completeParams.Position.Character - 2
+		charPos := completeParams.Position.Character - 1
 		runed := []rune(line)
 		if charPos > 0 {
 			//parse the full word,
@@ -274,6 +277,7 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 	switch *word {
 	case "tumia":
 		//get all files in directory of current data
+		logs.Println("FILE COMPLETING:", d.File)
 		packajiFiles := []string{}
 		dir := path.Dir(d.File)
 		files, error := os.ReadDir(dir)
@@ -286,11 +290,14 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 				}
 			}
 		}
+		logs.Println("PAKEJIS:",packajiFiles)
 		completions := []defines.CompletionItem{}
-		pakejiInfo := "Ni pajeji"
+		pakejiInfo := "Ni pakeji"
+		pakejiKind := defines.CompletionItemKindFile
 		for _, pakeji := range packajiFiles {
 			completions = append(completions, defines.CompletionItem{
 				Label: pakeji,
+				Kind: &pakejiKind,
 				LabelDetails: &defines.CompletionItemLabelDetails{Detail: &pakejiInfo},
 			})
 		}
@@ -298,6 +305,7 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 			completions = append(completions, defines.CompletionItem{
 				Label: tumia,
 				LabelDetails: &defines.CompletionItemLabelDetails{Detail: &pakejiInfo},
+				Kind: &pakejiKind,
 			})
 		}
 		return &completions, nil 
@@ -317,6 +325,20 @@ func NewData(file string, version uint64, content []string) (*Data, error) {
 	parser := parser.New(lexer)
 	root, errs := ParseTree(parser)
 
+	if len(errs) >0 {
+
+	}
+
+	fileUrl, err := url.Parse(file)
+	if err!=nil {
+		return nil, err
+	}
+
+	file = fileUrl.Path
+	if strings.HasPrefix(file,"/") && filepath.IsAbs(file[1:]){
+		file = file[1:]
+	}
+
 	data := Data{
 		File:     file,
 		Version:  version,
@@ -326,7 +348,7 @@ func NewData(file string, version uint64, content []string) (*Data, error) {
 	}
 
 	if len(errs) > 0 {
-		notifyErrors(&data, errs)
+		return nil, errors.New(fmt.Sprintf("File %s has errors", file))
 	}
 
 	Pages[file] = data
@@ -491,6 +513,12 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 	defer PagesMutext.Unlock()
 
 	file := string(req.TextDocument.Uri)
+
+	//if already previously opened by other methods just return here
+	if _, ok := Pages[file]; ok {
+		return nil
+	}
+
 	parsed, err := url.Parse(file)
 	if err != nil {
 		return nil
