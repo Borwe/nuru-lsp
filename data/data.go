@@ -71,22 +71,9 @@ func parseWordBackFromPosition(line []rune, pos int) *string {
 	return &tmp
 }
 
-func checkFileIsPackage(dir string, f fs.DirEntry) bool {
-	info, err := f.Info()
-	if info.IsDir() || err != nil {
-		return false
-	}
-
-	fName := f.Name()
-	extention := fName[len(fName)-2:]
-	if len(fName) > 3 && (extention != "nr" ) {
-		return false
-	}
-
-
-	fpath := filepath.Join(dir, f.Name())
-	logs.Println("DIR:",f)
-	logs.Println("DIRFPATH:",fpath)
+func checkFileIsPackage(dir string, file fs.DirEntry) bool {
+	fpath := path.Join(dir, file.Name())
+	logs.Println("DIRFPATH:", fpath)
 	data, ok := Pages[fpath]
 	if !ok {
 		linesBytes, err := os.ReadFile(fpath)
@@ -95,7 +82,7 @@ func checkFileIsPackage(dir string, f fs.DirEntry) bool {
 		}
 		lines := strings.Split(string(linesBytes), "\n")
 		tmp, err, errs := NewData(fpath, 0, lines)
-		if err != nil || len(errs)>0 {
+		if err != nil || len(errs) > 0 {
 			return false
 		}
 		Pages[fpath] = *tmp
@@ -107,7 +94,6 @@ func checkFileIsPackage(dir string, f fs.DirEntry) bool {
 	if len(*pakejiAsts) > 0 {
 		return true
 	}
-
 
 	return false
 }
@@ -253,9 +239,38 @@ func getAsts[T ast.Node](node ast.Node, result **[]T) {
 	}
 }
 
+func getNuruFilesInDir(dir string) []fs.DirEntry {
+	result := []fs.DirEntry{}
+	files, error := os.ReadDir(dir)
+	if error == nil {
+		//meaning we have files
+		for _, file := range files {
+			info, err := file.Info()
+			if err != nil {
+				continue
+			}
+			if info.IsDir() {
+				continue
+			}
+
+			fName := file.Name()
+			if len(fName) < 3 {
+				continue
+			}
+
+			extention := fName[len(fName)-2:]
+			if extention == "nr" {
+				result = append(result, file)
+			}
+		}
+	}
+	return result
+}
+
 func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines.CompletionItem, error) {
 	//get current word, otherwise get previous
 	var word *string = nil
+	var prevWord *string = nil
 
 	for no, line := range d.Content {
 		if no != int(completeParams.Position.Line) {
@@ -267,6 +282,9 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 		if charPos > 0 {
 			//parse the full word,
 			word = parseWordBackFromPosition(runed, int(charPos))
+			if word != nil {
+				prevWord = parseWordBackFromPosition(runed, int(charPos)-len(*word))
+			}
 		}
 	}
 
@@ -280,36 +298,114 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 		logs.Println("FILE COMPLETING:", d.File)
 		packajiFiles := []string{}
 		dir := path.Dir(d.File)
-		files, error := os.ReadDir(dir)
-		if error == nil {
-			//meaning we have files
-			for _, file := range files {
-				if checkFileIsPackage(dir, file) {
-					name := file.Name()
-					packajiFiles = append(packajiFiles, file.Name()[:len(name)-3])
-				}
+		files := getNuruFilesInDir(dir)
+		for _, file := range files {
+			if checkFileIsPackage(dir, file) {
+				name := file.Name()
+				packajiFiles = append(packajiFiles, name[:len(name)-3])
 			}
 		}
-		logs.Println("PAKEJIS:",packajiFiles)
+		logs.Println("PAKEJIS:", packajiFiles)
 		completions := []defines.CompletionItem{}
 		pakejiInfo := "Ni pakeji"
 		pakejiKind := defines.CompletionItemKindFile
 		for _, pakeji := range packajiFiles {
 			completions = append(completions, defines.CompletionItem{
-				Label: pakeji,
-				Kind: &pakejiKind,
+				Label:        pakeji,
+				Kind:         &pakejiKind,
 				LabelDetails: &defines.CompletionItemLabelDetails{Detail: &pakejiInfo},
 			})
 		}
 		for _, tumia := range TUMIAS {
 			completions = append(completions, defines.CompletionItem{
-				Label: tumia,
+				Label:        tumia,
 				LabelDetails: &defines.CompletionItemLabelDetails{Detail: &pakejiInfo},
-				Kind: &pakejiKind,
+				Kind:         &pakejiKind,
 			})
 		}
-		return &completions, nil 
+		for file, page := range Pages {
+			fileDir := path.Dir(file)
+			if fileDir == dir {
+				checks := &[]*ast.Package{}
+				getAsts(*page.RootTree, &checks)
+				if len(*checks)>0 {
+					name := filepath.Base(file)
+					name = name[0:len(name)-3]
+					same := false
+					for _, completion := range completions{
+						if completion.Label == name{
+							same = true
+							break
+						}
+					}
+
+					if !same {
+						completions = append(completions, defines.CompletionItem{
+							Label:        name,
+							LabelDetails: &defines.CompletionItemLabelDetails{Detail: &pakejiInfo},
+							Kind:         &pakejiKind,
+						})
+					}
+				}
+			}
+		}
+		return &completions, nil
 	default:
+		if *prevWord == "tumia" {
+			files := getNuruFilesInDir(path.Dir(d.File))
+			completions := []defines.CompletionItem{}
+			pakejiKind := defines.CompletionItemKindFile
+			pakejiInfo := "Ni pakeji"
+			for _, file := range files {
+				if checkFileIsPackage(path.Dir(d.File), file) {
+					name := file.Name()
+					if strings.Contains(name, *word) {
+						completions = append(completions, defines.CompletionItem{
+							Label:        name[0:len(name)-3],
+							Kind:         &pakejiKind,
+							LabelDetails: &defines.CompletionItemLabelDetails{Detail: &pakejiInfo},
+						})
+					}
+				}
+			}
+			for _, pakeji := range TUMIAS {
+					if strings.Contains(pakeji, *word) {
+						completions = append(completions, defines.CompletionItem{
+							Label:        pakeji,
+							Kind:         &pakejiKind,
+							LabelDetails: &defines.CompletionItemLabelDetails{Detail: &pakejiInfo},
+						})
+					}
+			}
+			dir := path.Dir(d.File)
+			for file, page := range Pages {
+				fileDir := path.Dir(file)
+				name := filepath.Base(file)
+				name = name[0:len(name)-3]
+				if fileDir == dir && strings.Contains(name, *word) {
+					checks := &[]*ast.Package{}
+					getAsts(*page.RootTree, &checks)
+					if len(*checks)>0 {
+						same := false
+						for _, completion := range completions{
+							if completion.Label == name{
+								same = true
+								break
+							}
+						}
+
+						if !same {
+							completions = append(completions, defines.CompletionItem{
+								Label:        name,
+								LabelDetails: &defines.CompletionItemLabelDetails{Detail: &pakejiInfo},
+								Kind:         &pakejiKind,
+							})
+						}
+					}
+				}
+			}
+			return &completions, nil
+		}
 		return nil, errors.New("NOT IMPLEMENTED")
 	}
 
@@ -325,17 +421,13 @@ func NewData(file string, version uint64, content []string) (*Data, error, []str
 	parser := parser.New(lexer)
 	root, errs := ParseTree(parser)
 
-	if len(errs) >0 {
-
-	}
-
 	fileUrl, err := url.Parse(file)
-	if err!=nil {
+	if err != nil {
 		return nil, err, errs
 	}
 
 	file = fileUrl.Path
-	if strings.HasPrefix(file,"/") && filepath.IsAbs(file[1:]){
+	if strings.HasPrefix(file, "/") && filepath.IsAbs(file[1:]) {
 		file = file[1:]
 	}
 
@@ -429,6 +521,7 @@ func notifyErrors(doc *Data, errors []string) {
 			})
 		}
 	}
+	logs.Println("DIAGS:",len(diagnostics), len(errors))
 	publishDiag := defines.PublishDiagnosticsParams{
 		Uri:         defines.DocumentUri(doc.File),
 		Diagnostics: diagnostics,
@@ -515,16 +608,11 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 		return nil
 	}
 
-	parsed, err := url.Parse(file)
-	if err != nil {
-		return nil
-	}
-
 	//we reach here means it exists, so open file and read it line by line
 	//read content of file line by line
 	content := ReadContents(req.TextDocument.Text)
 
-	doc, err, errs := NewData(parsed.Path, 0, content)
+	doc, err, errs := NewData(file, 0, content)
 	if err != nil {
 		return nil
 	}
@@ -532,7 +620,7 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 	//do diagnostics here on the file
 	notifyErrors(doc, errs)
 
-	logs.Printf("NURULSP DONE Opened file-> %s\n", parsed.Path)
+	logs.Printf("NURULSP DONE Opened file-> %s\n", file)
 	return nil
 }
 
@@ -556,10 +644,11 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 
 	} else {
 		if doc.Version < uint64(req.TextDocument.Version) {
-			doc.Version = uint64(req.TextDocument.Version)
 			content := []string{}
 			content = append(content, ReadContents(fmt.Sprint(req.ContentChanges[0].Text))...)
-			doc.Content = content
+			docnew, _, errsDoc := NewData(string(req.TextDocument.Uri), uint64(req.TextDocument.Version), content)
+			errs = errsDoc
+			doc = *docnew
 		}
 	}
 

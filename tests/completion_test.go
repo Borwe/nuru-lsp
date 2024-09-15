@@ -1,11 +1,13 @@
 package tests
 
 import (
+	"fmt"
 	"net/url"
 	data_mod "nuru-lsp/data"
 	"nuru-lsp/setup"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/Borwe/go-lsp/lsp/defines"
@@ -68,37 +70,37 @@ func TestTumiaCompletionNoIdentifier(t *testing.T) {
 	}
 }
 
-//func TestTumiaCompletionWithIdentifier(t *testing.T) {
-//	//create a completions params
-//	data, completionParams := createCompletionParams(t, defines.Position{
-//		Line:      0,
-//		Character: 6,
-//	}, []string{"tumia t"}, nil)
-//
-//	items, err := data.Completions(&completionParams)
-//	assert.Nil(t, err)
-//
-//	//fill tumias
-//	tumias := []string{"test"}
-//	for _, mod := range data_mod.TUMIAS {
-//		if strings.Contains(mod, "t") {
-//			tumias = append(tumias, mod)
-//		}
-//	}
-//
-//	itemsLabels := []string{}
-//	for _, item := range *items {
-//		itemsLabels = append(itemsLabels, item.Label)
-//	}
-//
-//	fmt.Println("LABELS: ",itemsLabels)
-//	assert.Equal(t, len(tumias), len(itemsLabels), "More items in completion than expected")
-//
-//	for _, item := range tumias {
-//		assert.Contains(t, itemsLabels, item)
-//	}
-//}
-//
+func TestTumiaCompletionWithIdentifier(t *testing.T) {
+	//create a completions params
+	data, completionParams, _ := createCompletionParams(t, defines.Position{
+		Line:      0,
+		Character: 7,
+	}, []string{"tumia t"}, nil)
+
+	items, err := data.Completions(&completionParams)
+	assert.Nil(t, err)
+
+	//fill tumias
+	tumias := []string{"test"}
+	for _, mod := range data_mod.TUMIAS {
+		if strings.Contains(mod, "t") {
+			tumias = append(tumias, mod)
+		}
+	}
+
+	itemsLabels := []string{}
+	for _, item := range *items {
+		itemsLabels = append(itemsLabels, item.Label)
+	}
+
+	fmt.Println("LABELS: ",itemsLabels)
+	assert.Equal(t, len(tumias), len(itemsLabels), "More items in completion than expected")
+
+	for _, item := range tumias {
+		assert.Contains(t, itemsLabels, item)
+	}
+}
+
 //func TestVariableFunctionCompletionWithoutIdentifier(t *testing.T) {
 //	//create a completions params
 //	data, completionParams := createCompletionParams(t, defines.Position{
