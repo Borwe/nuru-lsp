@@ -26,6 +26,7 @@ Checkout [this README.md](https://github.com/Borwe/nuru-lsp/blob/master/vscode-p
 
 ```lua
 -- requires you to have nvim-lspconfig
+local lspconfig = require("lsp-config")
 local lspconfig_configurer = require('lspconfig.configs')
 lspconfig_configurer["nuru-lsp"] = {
   default_config = {
@@ -41,7 +42,7 @@ https://github.com/Borwe/nuru-lsp
 Nuru Unofficial Language Server
         ]],
     default_config = {
-      root_dir = [[util.find_git_ancestor]],
+      root_dir = lspconfig.util.find_git_ancestor]],
     },
   },
 }

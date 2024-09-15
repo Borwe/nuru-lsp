@@ -2,39 +2,18 @@ package main
 
 import (
 	"context"
-	"log"
 	"nuru-lsp/completions"
 	"nuru-lsp/data"
 	"nuru-lsp/server"
-	"os"
+	"nuru-lsp/setup"
 
 	"github.com/Borwe/go-lsp/logs"
 	"github.com/Borwe/go-lsp/lsp/defines"
 )
 
-func setupLog() {
-	foundFile := true
-	if len(os.Args) == 2 {
-		file := os.Args[1]
-		f, err := os.Open(file)
-		if err != nil {
-			f, err = os.Create(file)
-			if err != nil {
-				foundFile = false
-			}
-		}
-		logs.Init(log.New(f, "", 0))
-	} else {
-		foundFile = false
-	}
-	if foundFile {
-		return
-	}
-	logs.Init(log.New(os.Stderr, "", 0))
-}
-
 func main() {
-	setupLog()
+
+	setup.SetupLog()
 
 	server.Server.OnInitialized(func(ctx context.Context, req *defines.InitializeParams) (err error) {
 		return nil
@@ -46,11 +25,14 @@ func main() {
 		return &defines.Hover{
 			Contents: defines.MarkupContent{
 				Kind:  defines.MarkupKindPlainText,
-				Value: "OnHover Testing",
+				Value: "OnHover Not implemented yet",
 			},
 		}, nil
 	})
 
+	server.Server.OnDidSaveTextDocument(func(ctx context.Context, req *defines.DidSaveTextDocumentParams) (err error) {
+		return nil
+	})
 	server.Server.OnDidOpenTextDocument(data.OnDocOpen)
 	server.Server.OnDidCloseTextDocument(data.OnDidClose)
 	server.Server.OnDidChangeTextDocument(data.OnDataChange)

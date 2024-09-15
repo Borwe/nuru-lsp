@@ -9,7 +9,7 @@ import (
 	"github.com/Borwe/go-lsp/lsp/defines"
 )
 
-var functions = map[string]string{
+var Functions = map[string]string{
 	"andika": `Inatumika kuandika mistari kwa terminali
 		mfano: andika(1,2,3) 
 		itaandika: 1, 2, 3 
@@ -27,7 +27,7 @@ var functions = map[string]string{
 		itaandika: "NAMBA"`,
 }
 
-var keywords = []string{
+var Keywords = []string{
 	"unda",
 	"fanya",
 	"kweli",
@@ -55,20 +55,19 @@ var Candidates = new(map[string]uint64)
 func defaultCompletionGenerator() (*[]defines.CompletionItem, error) {
 	result := make([]defines.CompletionItem, 0)
 
-	funcsKind :=defines.CompletionItemKindFunction 
-	for k, v := range functions {
+	funcsKind := defines.CompletionItemKindFunction
+	for k, v := range Functions {
 		result = append(result, defines.CompletionItem{
-			Kind: &funcsKind,
-			Label:  k,
+			Kind:          &funcsKind,
+			Label:         k,
 			Documentation: v,
 		})
 	}
 
-
 	keyWordCompletion := defines.CompletionItemKindKeyword
-	for _, v := range keywords {
+	for _, v := range Keywords {
 		completion := defines.CompletionItem{
-			Kind: &keyWordCompletion,
+			Kind:  &keyWordCompletion,
 			Label: v,
 		}
 		result = append(result, completion)
@@ -79,7 +78,6 @@ func defaultCompletionGenerator() (*[]defines.CompletionItem, error) {
 
 func CompletionFunc(ctx context.Context,
 	req *defines.CompletionParams) (*[]defines.CompletionItem, error) {
-	logs.Println("CompletionShow:", req)
 
 	file := string(req.TextDocument.Uri)
 	position := req.TextDocumentPositionParams.Position
@@ -90,15 +88,24 @@ func CompletionFunc(ctx context.Context,
 	defer data.PagesMutext.Unlock()
 
 	doc, found := data.Pages[file]
-	//check if such a doc was already included, if not just skip to do
-	//default evaluation with hints
+
 	if found == false {
 		return defaultCompletion, nil
 	}
-	if position.Line >= uint(len(doc.Content)) {
-		logs.Printf("Error: position  %d > file %s of lines %d \n",
-			position.Line, file, len(doc.Content))
+
+	logs.Println("POSITIONS:", req.Position)
+	logs.Println("CONTENT:",doc.Content)
+	for _,l := range doc.Content{
+		logs.Println(l)
+	}
+	docCompletions, err := doc.Completions(req)
+	if err!=nil || docCompletions == nil{
+		logs.Println("WTF? GANI TENA?", err, docCompletions)
 		return defaultCompletion, nil
+	}
+
+	if len(*docCompletions)>0 {
+		return docCompletions, nil
 	}
 
 	//get the word to be completed
