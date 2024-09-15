@@ -40,12 +40,12 @@ jobs:
         run: go mod tidy && go build 
 
       - name: Zip ${{matrix.config.name}}
-        if: matrix.config.os != "windows-latest"
+        if: matrix.config.os != 'windows-latest'
         run: |
           zip -r ./nuru-lsp-${{matrix.config.os}}.zip ./nuru-lsp
 
       - name: Zip ${{matrix.config.name}}
-        if: matrix.config.os == "windows-latest"
+        if: matrix.config.os == 'windows-latest'
         run: |
           tar -cf ./nuru-lsp-${{matrix.config.os}}.zip ./nuru-lsp.exe
 
