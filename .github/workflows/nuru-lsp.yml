@@ -37,15 +37,15 @@ jobs:
       - name: Build ${{matrix.config.name}}
         run: go mod tidy && go build 
 
-      - name: Zip ${{matrix.config.name}}
+      - name: Zip Unix
         if: matrix.config.os != 'windows-latest'
         run: |
           zip -r ./nuru-lsp-${{matrix.config.os}}.zip ./nuru-lsp
 
-      - name: Zip ${{matrix.config.name}}
+      - name: Zip Windows
         if: matrix.config.os == 'windows-latest'
         run: |
-          tar -cf ./nuru-lsp-${{matrix.config.os}}.zip ./nuru-lsp.exe
+          tar -cf ./nuru-lsp-${{matrix.config.os}}.zip nuru-lsp.exe
 
       - name: Release
         uses: softprops/action-gh-release@v1
