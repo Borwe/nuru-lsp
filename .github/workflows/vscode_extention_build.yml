@@ -1,6 +1,8 @@
 name: Build VScode Extention
 
-on: push
+on:
+  push:
+    branches: [ dev, master ]
 
 jobs:
   build:
