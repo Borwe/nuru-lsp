@@ -2,11 +2,7 @@ package tests
 
 import (
 	"fmt"
-	"net/url"
 	data_mod "nuru-lsp/data"
-	"nuru-lsp/setup"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -14,44 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func createCompletionParams(t *testing.T,
-	position defines.Position,
-	docInput []string, path *string) (data_mod.Data, defines.CompletionParams, []string) {
-	setup.SetupLog()
-	var file *url.URL = nil
-	if path == nil {
-		if _, file_loc, _, ok := runtime.Caller(0); ok == false {
-			t.Fatal("Failed to get dir of current package")
-		} else {
-			file = &url.URL{
-				Scheme: "file",
-				Path: filepath.ToSlash(file_loc),
-			}
-		}
-	} else {
-		file = &url.URL{
-				Scheme: "file",
-				Path: filepath.ToSlash(*path),
-			}
-	}
-
-	assert.NotNil(t, file)
-	assert.NotEqual(t, 0, len(file.Path))
-	data, _, errs := data_mod.NewData(file.String(), 0, docInput)
-
-	return *data, defines.CompletionParams{
-		TextDocumentPositionParams: defines.TextDocumentPositionParams{
-			TextDocument: defines.TextDocumentIdentifier{
-				Uri: defines.DocumentUri(file.String()),
-			},
-			Position: position,
-		},
-	}, errs
-}
-
 func TestTumiaCompletionNoIdentifier(t *testing.T) {
 	//create a completions params
-	data, completionParams, _ := createCompletionParams(t, defines.Position{
+	data, completionParams, _ := CreateCompletionParams(t, defines.Position{
 		Line:      0,
 		Character: 6,
 	}, []string{"tumia "}, nil)
@@ -72,7 +33,7 @@ func TestTumiaCompletionNoIdentifier(t *testing.T) {
 
 func TestTumiaCompletionWithIdentifier(t *testing.T) {
 	//create a completions params
-	data, completionParams, _ := createCompletionParams(t, defines.Position{
+	data, completionParams, _ := CreateCompletionParams(t, defines.Position{
 		Line:      0,
 		Character: 7,
 	}, []string{"tumia t"}, nil)
@@ -93,12 +54,45 @@ func TestTumiaCompletionWithIdentifier(t *testing.T) {
 		itemsLabels = append(itemsLabels, item.Label)
 	}
 
-	fmt.Println("LABELS: ",itemsLabels)
+	fmt.Println("LABELS: ", itemsLabels)
 	assert.Equal(t, len(tumias), len(itemsLabels), "More items in completion than expected")
 
 	for _, item := range tumias {
 		assert.Contains(t, itemsLabels, item)
 	}
+}
+
+func TestCompleteTumiaHeaderCompletionToContainNewFileCretedAfter(t *testing.T){
+	firstEdit := "test123.nr"
+	secondFile := "testhead123.nr"
+	secondFilePakejiname := secondFile[0:len(secondFile)-3]
+	data, completionParams, _ := CreateCompletionParams(t, defines.Position{
+		Line:      0,
+		Character: 7,
+	}, []string{"tumia t"}, &firstEdit)
+	items, err := data.Completions(&completionParams)
+	assert.Nil(t, err)
+	itemsLabels := []string{}
+	for _, item := range *items {
+		itemsLabels = append(itemsLabels, item.Label)
+	}
+	assert.NotContains(t, itemsLabels,secondFilePakejiname)
+
+	//add secondfile
+	_, _, errs := CreateCompletionParams(t, defines.Position{
+		Line:      0,
+		Character: 7,
+	}, []string{ fmt.Sprintf(
+			"pakeji %s { checka = unda(){ andika (\"HAHA\")}}",
+			secondFilePakejiname)}, &secondFile)
+	assert.Equal(t, 0, len(errs), errs)
+	items, err = data.Completions(&completionParams)
+	assert.Nil(t, err)
+	itemsLabels = []string{}
+	for _, item := range *items {
+		itemsLabels = append(itemsLabels, item.Label)
+	}
+	assert.Contains(t, itemsLabels,secondFilePakejiname)
 }
 
 //func TestVariableFunctionCompletionWithoutIdentifier(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	
+
 	setup.SetupLog()
 
 	server.Server.OnInitialized(func(ctx context.Context, req *defines.InitializeParams) (err error) {
@@ -25,7 +25,7 @@ func main() {
 		return &defines.Hover{
 			Contents: defines.MarkupContent{
 				Kind:  defines.MarkupKindPlainText,
-				Value: "OnHover Testing",
+				Value: "OnHover Not implemented yet",
 			},
 		}, nil
 	})
