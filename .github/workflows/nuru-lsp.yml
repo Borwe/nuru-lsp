@@ -1,8 +1,6 @@
 name: Build Nuru-Lsp Executable
 
-on:
-  push:
-    branches: [ dev, master ]
+on: [push]
 
 jobs:
   build:
