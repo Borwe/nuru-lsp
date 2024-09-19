@@ -6,7 +6,7 @@
   "license": "MIT",
   "version": "0.0.1",
   "publisher": "BrianOrwe",
-  "icon": "./img/nuru.png",
+  "icon": "img/nuru.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/Borwe/nuru-lsp"
@@ -39,18 +39,18 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -b",
-    "watch": "tsc -b -w"
+    "compile": "npx tsc -b",
+    "watch": "npx tsc -b -w"
   },
   "dependencies": {
     "vscode-languageclient": "^8.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.5.7",
-    "typescript": "^5.2.2",
     "@types/vscode": "^1.75.0",
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.8",
+    "typescript": "^5.6.2",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   }

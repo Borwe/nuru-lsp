@@ -3,8 +3,7 @@ module nuru-lsp
 go 1.20.1
 
 require (
-	github.com/AvicennaJr/Nuru v0.5.16
-	github.com/smacker/go-tree-sitter v0.0.0-20230720070738-0d0a9f78d8f8
+	github.com/NuruProgramming/Nuru v0.5.17-0.20240609132608-b240373087fa
 	github.com/stretchr/testify v1.7.4
 )
 

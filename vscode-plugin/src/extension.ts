@@ -1,5 +1,4 @@
-import * as path from "path";
-import * as fs from "fs";
+import { exec, ExecException } from "child_process";
 import * as os from "os";
 import { workspace, ExtensionContext, window, commands } from "vscode";
 
@@ -11,8 +10,17 @@ import {
 } from "vscode-languageclient/node";
 
 let client: LanguageClient;
+/** Hold information on location of lsp file to execute */
+let command = "nuru-lsp"
+
+const VERSION = "0.0.6"
+const LINK_BASE = `https://github.com/Borwe/nuru-lsp/releases/download/v${VERSION}/`
+
+async function downloadLSPExecutable(link: string) {
+}
 
 export function activate(context: ExtensionContext) {
+  console.log("ACTIVATING....")
   //register commands
   commands.registerCommand("nuru.languageserver.restart", async ()=>{
     if(client.isRunning()){
@@ -20,26 +28,37 @@ export function activate(context: ExtensionContext) {
     }
     client.start()
     window.showInformationMessage("Nuru LSP restarted")
-  })
-  commands.registerCommand("nuru.languageserver.stop", async ()=>{
-    if(client.isRunning()){
-      await client.stop()
-    }
-    window.showInformationMessage("Nuru LSP stopped")
-  })
+  });
   commands.registerCommand("nuru.languageserver.start", async ()=>{
     if(!client.isRunning()){
       await client.start()
     }
     window.showInformationMessage("Nuru LSP started")
-  })
-
-
-  const command = (()=>{
-    if(os.platform() === "win32"){
-      return "nuru-lsp.exe"
+  });
+  commands.registerCommand("nuru.languageserver.stop", async ()=>{
+    if(client.isRunning()){
+      await client.stop()
     }
-    return "nuru-lsp"
+    window.showInformationMessage("Nuru LSP stopped")
+  });
+
+  (async ()=>{
+    let cmd: string = "nuru-lsp"
+    let url = LINK_BASE+"nuru-lsp-ubuntu-latest.zip"
+    let result: Promise<string> 
+    if(os.platform() === "win32"){
+      url = LINK_BASE + "nuru-lsp-windows-latest.zip"
+      cmd = "nuru-lsp.exe"
+    }
+    if(os.platform() === "darwin"){
+      url = LINK_BASE + "nuru-lsp-macos-latest.zip"
+    }
+    exec(cmd, async (err: ExecException|null, stdout: string, stderr: string)=>{
+      if(err!=null){
+        await downloadLSPExecutable(url)
+      }
+    })
+    return result
   })()
 
   const serverOptions: ServerOptions = {
