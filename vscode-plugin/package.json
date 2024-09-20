@@ -40,7 +40,9 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "npx tsc -b",
-    "watch": "npx tsc -b -w"
+    "watch": "npx tsc -b -w",
+    "pretest": "npm run compile",
+    "test": "vscode-test"
   },
   "dependencies": {
     "vscode-languageclient": "^8.1.0"
@@ -50,6 +52,7 @@
     "@types/vscode": "^1.75.0",
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.8",
+    "dotenv": "^16.4.5",
     "typescript": "^5.6.2",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
