@@ -8,6 +8,9 @@ import {
   ServerOptions,
   TransportKind,
 } from "vscode-languageclient/node";
+import { downloadOrUpdate, isInstalled } from "./utils";
+
+export let Context: ExtensionContext
 
 let client: LanguageClient;
 /** Hold information on location of lsp file to execute */
@@ -20,8 +23,10 @@ async function downloadLSPExecutable(link: string) {
 }
 
 export function activate(context: ExtensionContext) {
-  console.log("ACTIVATING....")
+  Context = context
   //register commands
+  commands.registerCommand("nuru.languageserver.is-installed", isInstalled);
+  commands.registerCommand("nuru.languageserver.download", downloadOrUpdate);
   commands.registerCommand("nuru.languageserver.restart", async ()=>{
     if(client.isRunning()){
       await client.stop()

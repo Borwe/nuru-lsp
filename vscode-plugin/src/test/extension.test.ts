@@ -1,14 +1,24 @@
 import * as assert from 'assert';
-
-// You can import and use all API from the 'vscode' module
-// as well as import your extension to test it
 import * as vscode from 'vscode';
-// import * as myExtension from '../../extension';
+import * as extension from '../extension'
+import { getLatestReleaseVersion } from '../utils';
 
-suite('Extension Test Suite', () => {
-	vscode.window.showInformationMessage('Start all tests.');
+suite('Getting nuru-lsp file', () => {
 
-	test('Sample test', () => {
-		assert.strictEqual(true, false);
+	test('Checking if nuru-lsp not in dir', async () => {
+		const exists = await vscode.commands.executeCommand("nuru.languageserver.is-installed")
+		assert.strictEqual(exists, false);
+	});
+
+	test("Test getting latest release", async()=>{
+		const num = await getLatestReleaseVersion()
+		assert.strict.notEqual(num, 0)
+	})
+
+	test('Checking if nuru-lsp in dir after downloading', async () => {
+		const downloaded = await vscode.commands.executeCommand("nuru.languageserver.download")
+		assert.strictEqual(downloaded, true);
+		const exists = await vscode.commands.executeCommand("nuru.languageserver.is-installed")
+		assert.strictEqual(exists, true);
 	});
 });
