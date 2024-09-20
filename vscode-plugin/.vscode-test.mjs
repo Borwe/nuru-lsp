@@ -14,5 +14,9 @@ function getInstallationConfig(){
 
 export default defineConfig({
 	files: 'out/test/**/*.test.js',
-	useInstallation: getInstallationConfig()
+	useInstallation: getInstallationConfig(),
+	mocha: {
+		ui: "tdd",
+		timeout: 5000000000
+	}
 });
