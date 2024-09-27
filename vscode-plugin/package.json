@@ -47,11 +47,12 @@
     "test": "vscode-test"
   },
   "dependencies": {
-    "adm-zip": "^0.5.16",
+    "extract-zip": "^2.0.1",
     "vscode-languageclient": "^8.1.0"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.5",
+    "@types/extract-zip": "^2.0.0",
     "@types/node": "^20.5.7",
     "@types/vscode": "^1.75.0",
     "@vscode/test-cli": "^0.0.4",

@@ -8,7 +8,7 @@ import {
   ServerOptions,
   TransportKind,
 } from "vscode-languageclient/node";
-import { downloadOrUpdate, isInstalled } from "./utils";
+import { downloadOrUpdate, isInstalled, VERSION } from "./utils";
 
 export let Context: ExtensionContext
 
@@ -16,7 +16,6 @@ let client: LanguageClient;
 /** Hold information on location of lsp file to execute */
 let command = "nuru-lsp"
 
-const VERSION = "0.0.6"
 const LINK_BASE = `https://github.com/Borwe/nuru-lsp/releases/download/v${VERSION}/`
 
 async function downloadLSPExecutable(link: string) {
