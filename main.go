@@ -2,16 +2,27 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"nuru-lsp/completions"
 	"nuru-lsp/data"
 	"nuru-lsp/server"
 	"nuru-lsp/setup"
+	"os"
 
 	"github.com/Borwe/go-lsp/logs"
 	"github.com/Borwe/go-lsp/lsp/defines"
 )
 
+const Version = "0.0.06"
+
 func main() {
+
+	if len(os.Args) >= 2 {
+		if os.Args[1] == "--version" {
+			fmt.Println("VERSION:",Version)
+			return
+		}
+	}
 
 	setup.SetupLog()
 

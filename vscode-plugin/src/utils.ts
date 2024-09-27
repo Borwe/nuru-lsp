@@ -7,7 +7,6 @@ import { exec } from "child_process";
 import path = require("path");
 import { pipeline } from "stream";
 import { promisify } from "util";
-import * as extract from "extract-zip";
 
 const CMD: string = os.platform() == "win32" ? "nuru-lsp.exe" : "nuru-lsp"
 export const VERSION = "0.0.06"
@@ -68,11 +67,9 @@ export async function downloadOrUpdate(): Promise<boolean> {
 const getPathOfCMD = () => path.join(Context.extensionPath, CMD)
 
 async function getAndInstallLatest(): Promise<boolean> {
-    console.log("LINK USED:", LINK_BASE)
     const resp = await fetch(LINK_BASE)
     if (!resp.ok) {
         vscode.window.showErrorMessage("Failed to download zip file from: " + LINK_BASE)
-        console.log("FAILED TO DOWNLOAD FROM LINK")
         return false
     }
 
@@ -81,8 +78,16 @@ async function getAndInstallLatest(): Promise<boolean> {
     const fstream = fs.createWriteStream(zipPath)
     await promisify(pipeline)(resp.body, fstream)
     await new Promise(resolve => { fstream.close(resolve) })
-    console.log("FILE AT:", zipPath)
-    return new Promise((resolve, reject) => extract(zipPath, { dir: extPath })
-        .then(() => { resolve(true) })
-        .catch((err) => { resolve(false); console.error("ERROR:",err) }))
+    let cmd = `tar -xf ${zipPath} -C ${extPath}`
+    if(OSTYPE !== "windows"){
+        //cmd to extract zip on linux & mac
+        cmd = `unzip -q ${zipPath} -d ${extPath}`
+    }
+    return new Promise(resolve=>exec(`tar -xf ${zipPath} -C ${extPath}`, (err, stdout, stderr) => {
+        if (err) {
+            vscode.window.showErrorMessage(`Failed to extract zip file with commdand:\n ${cmd}`)
+            resolve(false)
+        }
+        resolve(true)
+    }))
 }
