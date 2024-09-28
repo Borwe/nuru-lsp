@@ -47,17 +47,17 @@
     "test": "vscode-test"
   },
   "dependencies": {
-    "extract-zip": "^2.0.1",
     "vscode-languageclient": "^8.1.0"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.5",
-    "@types/extract-zip": "^2.0.0",
+    "@types/mocha": "^10.0.8",
     "@types/node": "^20.5.7",
     "@types/vscode": "^1.75.0",
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.8",
     "dotenv": "^16.4.5",
+    "mocha": "^10.7.3",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.2",
     "webpack": "^5.89.0",
