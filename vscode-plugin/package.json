@@ -44,7 +44,8 @@
     "compile": "npx tsc -b",
     "watch": "npx tsc -b -w",
     "pretest": "npm run compile",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "otest": "npm run compile && vscode-test -i -f 'online'"
   },
   "dependencies": {
     "vscode-languageclient": "^8.1.0"

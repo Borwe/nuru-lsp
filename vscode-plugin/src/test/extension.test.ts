@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
 
-suite('Getting nuru-lsp file', () => {
+suite('Getting nuru-lsp file online', () => {
 
 	//get an vscode.ExtensionContext instance
 	const context = vscode.extensions.getExtension("BrianOrwe.nuru-lsp");
@@ -47,7 +47,12 @@ suite('Getting nuru-lsp file', () => {
 });
 
 suite('Testing LSP workings', () => {
-	test("nuru-lSP attatches to nr file one start", () => {
+	test("nuru-lsp is not running", async()=>{
+		const isRunning = await vscode.commands.executeCommand("nuru.languageserver.is-running")
+		assert.strictEqual(isRunning, false)
+	})
+
+	test("nuru-lSP attatches to nr file once opened", () => {
 		assert.strictEqual(false, true, "NOT IMPLEMENTED")
 	})
 })

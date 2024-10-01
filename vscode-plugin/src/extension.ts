@@ -21,16 +21,22 @@ export function activate(context: ExtensionContext) {
   //register commands
   commands.registerCommand("nuru.languageserver.is-installed", isInstalled);
   commands.registerCommand("nuru.languageserver.download", downloadOrUpdate);
+  commands.registerCommand("nuru.languageserver.is-running",()=>{
+    if(client && client.isRunning()){
+      return true
+    }
+    return false
+  })
   commands.registerCommand("nuru.languageserver.restart", async () => {
     if (client.isRunning()) {
       await client.stop()
     }
-    client.start()
+    launchServer()
     window.showInformationMessage("Nuru LSP restarted")
   });
   commands.registerCommand("nuru.languageserver.start", async () => {
     if (!client.isRunning()) {
-      await client.start()
+      launchServer()
     }
     window.showInformationMessage("Nuru LSP started")
   });
@@ -64,11 +70,12 @@ export function activate(context: ExtensionContext) {
     serverOptions,
     clientOptions
   );
+}
 
-  // Start the client. This will also launch the server
-  //client.start().catch((err) => {
-  //  window.showErrorMessage(`Nuru Lsp failed to start error: ${err}`)
-  //});
+function launchServer(){
+  client.start().catch((err) => {
+    window.showErrorMessage(`Nuru Lsp failed to start error: ${err}`)
+  });
 }
 
 export function deactivate(): Thenable<void> | undefined {
