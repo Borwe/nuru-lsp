@@ -20,7 +20,8 @@ Once you build you will have the executable `nuru-lsp`, you can use it to setup 
 
 #### Example VsCode
 
-Checkout [this README.md](https://github.com/Borwe/nuru-lsp/blob/master/vscode-plugin/README.md) for more information
+- It is adviced to [this README.md](https://github.com/Borwe/nuru-lsp/blob/master/vscode-plugin/README.md) for more information
+- Also for better UX install nuru-snippets by Kabwoy and the official Nuru Programming Vscode plugin
 
 #### Example for neovim:
 

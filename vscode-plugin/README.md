@@ -13,3 +13,4 @@ NOTE: Available on vscode package manager for instalation
 
 ## Usage
 - You can get this plugin file for manual installation on the release section.
+- Also for better UX install nuru-snippets by Kabwoy and the official Nuru Programming Vscode plugin
