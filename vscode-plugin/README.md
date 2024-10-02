@@ -2,6 +2,10 @@
 
 A Language Server Client extention for Vscode.
 
+``` 
+NOTE: Available on vscode package manager for instalation 
+```
+
 ## LSP supported:
 - Error notifications
 - Completion for key words
