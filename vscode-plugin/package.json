@@ -6,7 +6,7 @@
   "license": "MIT",
   "version": "0.0.1",
   "publisher": "BrianOrwe",
-  "icon": "./img/nuru.png",
+  "icon": "img/nuru.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/Borwe/nuru-lsp"
@@ -14,15 +14,17 @@
   "engines": {
     "vscode": "^1.75.0"
   },
-  "extensionDependencies": [
-    "nuruprogramminglanguage.nuru"
-  ],
+  "extensionDependencies": [],
   "activationEvents": [
-    "onLanguage:plaintext"
+    "onLanguage:nr"
   ],
   "main": "./out/extension",
   "contributes": {
     "commands": [
+      {
+        "command": "nuru.languageserver.is-installed",
+        "title": "Nuru LSP: Is installed"
+      },
       {
         "command": "nuru.languageserver.restart",
         "title": "Nuru LSP: Restart"
@@ -35,22 +37,45 @@
         "command": "nuru.languageserver.start",
         "title": "Nuru LSP: Start"
       }
+    ],
+    "languages": [
+      {
+        "id": "nr",
+        "aliases": [
+          "Nuru Programming Language",
+          "nuru"
+        ],
+        "extensions": [
+          ".nr",
+          ".sw"
+        ]
+      }
     ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -b",
-    "watch": "tsc -b -w"
+    "compile": "npx tsc -b",
+    "watch": "npx tsc -b -w",
+    "pretest": "npm run compile",
+    "test": "vscode-test",
+    "otest": "npm run compile && vscode-test -i -f 'online'",
+    "package": "vsce package"
   },
   "dependencies": {
     "vscode-languageclient": "^8.1.0"
   },
   "devDependencies": {
+    "vsce": "^2.15.0",
+    "@types/adm-zip": "^0.5.5",
+    "@types/mocha": "^10.0.8",
     "@types/node": "^20.5.7",
-    "typescript": "^5.2.2",
     "@types/vscode": "^1.75.0",
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.8",
+    "dotenv": "^16.4.5",
+    "mocha": "^10.7.3",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.2",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   }

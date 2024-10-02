@@ -4,3 +4,5 @@ client/server
 .vscode-test
 tsconfig.tsbuildinfo
 *.vsix
+.env
+nuru-lsp.zip

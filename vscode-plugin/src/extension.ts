@@ -1,5 +1,4 @@
-import * as path from "path";
-import * as fs from "fs";
+import { exec, ExecException } from "child_process";
 import * as os from "os";
 import { workspace, ExtensionContext, window, commands } from "vscode";
 
@@ -9,38 +8,44 @@ import {
   ServerOptions,
   TransportKind,
 } from "vscode-languageclient/node";
+import { downloadOrUpdate, getExtentionPath, isInstalled, launchServer, VERSION } from "./utils";
 
-let client: LanguageClient;
+export let Context: ExtensionContext
+
+export let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
+  /** Hold information on location of lsp file to execute */
+  Context = context
+  const command = getExtentionPath()
   //register commands
-  commands.registerCommand("nuru.languageserver.restart", async ()=>{
-    if(client.isRunning()){
+  commands.registerCommand("nuru.languageserver.is-installed", isInstalled);
+  commands.registerCommand("nuru.languageserver.download", downloadOrUpdate);
+  commands.registerCommand("nuru.languageserver.is-running", () => {
+    if (client && client.isRunning()) {
+      return true
+    }
+    return false
+  })
+  commands.registerCommand("nuru.languageserver.restart", async () => {
+    if (client.isRunning()) {
       await client.stop()
     }
-    client.start()
+    launchServer()
     window.showInformationMessage("Nuru LSP restarted")
-  })
-  commands.registerCommand("nuru.languageserver.stop", async ()=>{
-    if(client.isRunning()){
+  });
+  commands.registerCommand("nuru.languageserver.start", async () => {
+    if (!client.isRunning()) {
+      launchServer()
+    }
+  });
+  commands.registerCommand("nuru.languageserver.stop", async () => {
+    if (client.isRunning()) {
       await client.stop()
     }
     window.showInformationMessage("Nuru LSP stopped")
-  })
-  commands.registerCommand("nuru.languageserver.start", async ()=>{
-    if(!client.isRunning()){
-      await client.start()
-    }
-    window.showInformationMessage("Nuru LSP started")
-  })
+  });
 
-
-  const command = (()=>{
-    if(os.platform() === "win32"){
-      return "nuru-lsp.exe"
-    }
-    return "nuru-lsp"
-  })()
 
   const serverOptions: ServerOptions = {
     run: { command: command, transport: TransportKind.stdio },
@@ -50,10 +55,10 @@ export function activate(context: ExtensionContext) {
   // Options to control the language client
   const clientOptions: LanguageClientOptions = {
     // Register the server for all documents by default
-    documentSelector: [{ language: "nuru" }],
+    documentSelector: [{ language: "nr", scheme:"file" }],
     synchronize: {
       // Notify the server about file changes to '.clientrc files contained in the workspace
-      fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
+      fileEvents: workspace.createFileSystemWatcher("**/*.{nr,sr}"),
     },
   };
 
@@ -65,11 +70,9 @@ export function activate(context: ExtensionContext) {
     clientOptions
   );
 
-  // Start the client. This will also launch the server
-  client.start().catch((err)=>{
-    window.showErrorMessage(`Nuru Lsp failed to start error: ${err}`)
-  });
+  launchServer()
 }
+
 
 export function deactivate(): Thenable<void> | undefined {
   if (!client) {

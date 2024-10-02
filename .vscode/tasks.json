@@ -4,6 +4,9 @@
     {
       "type": "npm",
       "script": "compile",
+      "options": {
+        "cwd": "${workspaceFolder}/vscode-plugin"
+      },
       "group": "build",
       "presentation": {
         "panel": "dedicated",
@@ -14,6 +17,9 @@
     {
       "type": "npm",
       "script": "watch",
+      "options": {
+        "cwd": "${workspaceFolder}/vscode-plugin"
+      },
       "isBackground": true,
       "group": {
         "kind": "build",

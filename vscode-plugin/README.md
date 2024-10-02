@@ -2,9 +2,14 @@
 
 A Language Server Client extention for Vscode.
 
-## Usage
+``` 
+NOTE: Available on vscode package manager for instalation 
+```
 
-- Please make sure you have a working `nuru-lsp` executable located in your system
-path for everything to work.
-- The `nuru-lsp` executable can be gotten by building from source by following instructions on [here](https://github.com/Borwe/nuru-lsp)
-- You can get the plugin file for manual installation in `vscode` on the release section.
+## LSP supported:
+- Error notifications
+- Completion for key words
+- Completion for `tumia` based on default exported and current `pakeji` in file
+
+## Usage
+- You can get this plugin file for manual installation on the release section.

@@ -15,11 +15,11 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/AvicennaJr/Nuru/ast"
-	"github.com/AvicennaJr/Nuru/lexer"
-	"github.com/AvicennaJr/Nuru/parser"
 	"github.com/Borwe/go-lsp/logs"
 	"github.com/Borwe/go-lsp/lsp/defines"
+	"github.com/NuruProgramming/Nuru/ast"
+	"github.com/NuruProgramming/Nuru/lexer"
+	"github.com/NuruProgramming/Nuru/parser"
 )
 
 var TUMIAS []string = []string{
@@ -328,12 +328,12 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 			if fileDir == dir {
 				checks := &[]*ast.Package{}
 				getAsts(*page.RootTree, &checks)
-				if len(*checks)>0 {
+				if len(*checks) > 0 {
 					name := filepath.Base(file)
-					name = name[0:len(name)-3]
+					name = name[0 : len(name)-3]
 					same := false
-					for _, completion := range completions{
-						if completion.Label == name{
+					for _, completion := range completions {
+						if completion.Label == name {
 							same = true
 							break
 						}
@@ -361,7 +361,7 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 					name := file.Name()
 					if strings.Contains(name, *word) {
 						completions = append(completions, defines.CompletionItem{
-							Label:        name[0:len(name)-3],
+							Label:        name[0 : len(name)-3],
 							Kind:         &pakejiKind,
 							LabelDetails: &defines.CompletionItemLabelDetails{Detail: &pakejiInfo},
 						})
@@ -369,26 +369,26 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 				}
 			}
 			for _, pakeji := range TUMIAS {
-					if strings.Contains(pakeji, *word) {
-						completions = append(completions, defines.CompletionItem{
-							Label:        pakeji,
-							Kind:         &pakejiKind,
-							LabelDetails: &defines.CompletionItemLabelDetails{Detail: &pakejiInfo},
-						})
-					}
+				if strings.Contains(pakeji, *word) {
+					completions = append(completions, defines.CompletionItem{
+						Label:        pakeji,
+						Kind:         &pakejiKind,
+						LabelDetails: &defines.CompletionItemLabelDetails{Detail: &pakejiInfo},
+					})
+				}
 			}
 			dir := path.Dir(d.File)
 			for file, page := range Pages {
 				fileDir := path.Dir(file)
 				name := filepath.Base(file)
-				name = name[0:len(name)-3]
+				name = name[0 : len(name)-3]
 				if fileDir == dir && strings.Contains(name, *word) {
 					checks := &[]*ast.Package{}
 					getAsts(*page.RootTree, &checks)
-					if len(*checks)>0 {
+					if len(*checks) > 0 {
 						same := false
-						for _, completion := range completions{
-							if completion.Label == name{
+						for _, completion := range completions {
+							if completion.Label == name {
 								same = true
 								break
 							}
@@ -521,7 +521,7 @@ func notifyErrors(doc *Data, errors []string) {
 			})
 		}
 	}
-	logs.Println("DIAGS:",len(diagnostics), len(errors))
+	logs.Println("DIAGS:", len(diagnostics), len(errors))
 	publishDiag := defines.PublishDiagnosticsParams{
 		Uri:         defines.DocumentUri(doc.File),
 		Diagnostics: diagnostics,
