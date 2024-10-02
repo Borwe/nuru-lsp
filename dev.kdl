@@ -1,0 +1,25 @@
+layout {
+        tab name="Nuru-Lsp" cwd="./" {
+                floating_panes {
+                        pane name="npm i" cwd="./vscode-plugin" command="npm" start_suspended=true {
+                                args "i"
+                        }
+                        pane name="go build" command="go" start_suspended=true {
+                                args "build"
+                        }
+                        pane name="npm test" cwd="./vscode-plugin" command="npm" start_suspended=true{
+                                args "test"
+                        }
+                        pane name="package plugin" cwd="./vscode-plugin" command="npm" start_suspended=true{
+                                args "package"
+                        }
+                }
+                pane stacked=true{
+                        pane name="go part"  focus=true edit="./go.mod" expanded=true
+                        pane name="vscode part" cwd="./vscode-plugin" edit="./package.json"
+                        pane size=1 borderless=true {
+                                plugin location="zellij:status-bar"
+                        }
+                }
+        }
+}
