@@ -15,8 +15,8 @@ jobs:
       - name: Install vsce
         run: npm i -g @vscode/vsce
       
-      - name: Build extention
-        run: cd vscode-plugin && npm i && npm run compile && vsce package 
+      - name: Build and test extention
+        run: cd vscode-plugin && npm i && npm test && npm run compile && vsce package 
       
       - name: Release
         uses: softprops/action-gh-release@v1
