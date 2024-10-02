@@ -8,21 +8,21 @@ import {
   ServerOptions,
   TransportKind,
 } from "vscode-languageclient/node";
-import { downloadOrUpdate, isInstalled, VERSION } from "./utils";
+import { downloadOrUpdate, getExtentionPath, isInstalled, launchServer, VERSION } from "./utils";
 
 export let Context: ExtensionContext
 
-let client: LanguageClient;
-/** Hold information on location of lsp file to execute */
-let command = "nuru-lsp"
+export let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
+  /** Hold information on location of lsp file to execute */
   Context = context
+  const command = getExtentionPath()
   //register commands
   commands.registerCommand("nuru.languageserver.is-installed", isInstalled);
   commands.registerCommand("nuru.languageserver.download", downloadOrUpdate);
-  commands.registerCommand("nuru.languageserver.is-running",()=>{
-    if(client && client.isRunning()){
+  commands.registerCommand("nuru.languageserver.is-running", () => {
+    if (client && client.isRunning()) {
       return true
     }
     return false
@@ -38,7 +38,6 @@ export function activate(context: ExtensionContext) {
     if (!client.isRunning()) {
       launchServer()
     }
-    window.showInformationMessage("Nuru LSP started")
   });
   commands.registerCommand("nuru.languageserver.stop", async () => {
     if (client.isRunning()) {
@@ -56,10 +55,10 @@ export function activate(context: ExtensionContext) {
   // Options to control the language client
   const clientOptions: LanguageClientOptions = {
     // Register the server for all documents by default
-    documentSelector: [{ language: "nuru", pattern: "*.{nr,sr}" }],
+    documentSelector: [{ language: "nr", scheme:"file" }],
     synchronize: {
       // Notify the server about file changes to '.clientrc files contained in the workspace
-      fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
+      fileEvents: workspace.createFileSystemWatcher("**/*.{nr,sr}"),
     },
   };
 
@@ -70,13 +69,10 @@ export function activate(context: ExtensionContext) {
     serverOptions,
     clientOptions
   );
+
+  launchServer()
 }
 
-function launchServer(){
-  client.start().catch((err) => {
-    window.showErrorMessage(`Nuru Lsp failed to start error: ${err}`)
-  });
-}
 
 export function deactivate(): Thenable<void> | undefined {
   if (!client) {

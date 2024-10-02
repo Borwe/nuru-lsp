@@ -16,7 +16,7 @@
   },
   "extensionDependencies": [],
   "activationEvents": [
-    "onLanguage:plaintext"
+    "onLanguage:nr"
   ],
   "main": "./out/extension",
   "contributes": {
@@ -37,6 +37,19 @@
         "command": "nuru.languageserver.start",
         "title": "Nuru LSP: Start"
       }
+    ],
+    "languages": [
+      {
+        "id": "nr",
+        "aliases": [
+          "Nuru Programming Language",
+          "nuru"
+        ],
+        "extensions": [
+          ".nr",
+          ".sw"
+        ]
+      }
     ]
   },
   "scripts": {
@@ -45,12 +58,14 @@
     "watch": "npx tsc -b -w",
     "pretest": "npm run compile",
     "test": "vscode-test",
-    "otest": "npm run compile && vscode-test -i -f 'online'"
+    "otest": "npm run compile && vscode-test -i -f 'online'",
+    "package": "vsce package"
   },
   "dependencies": {
     "vscode-languageclient": "^8.1.0"
   },
   "devDependencies": {
+    "vsce": "^2.15.0",
     "@types/adm-zip": "^0.5.5",
     "@types/mocha": "^10.0.8",
     "@types/node": "^20.5.7",

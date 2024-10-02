@@ -19,7 +19,7 @@ func main() {
 
 	if len(os.Args) >= 2 {
 		if os.Args[1] == "--version" {
-			fmt.Println("VERSION:",Version)
+			fmt.Println("VERSION:", Version)
 			return
 		}
 	}
@@ -43,6 +43,10 @@ func main() {
 
 	server.Server.OnDidSaveTextDocument(func(ctx context.Context, req *defines.DidSaveTextDocumentParams) (err error) {
 		return nil
+	})
+	server.Server.OnDidChangeWatchedFiles(func(ctx context.Context,
+		req *defines.DidChangeWatchedFilesParams) (err error) {
+			return nil
 	})
 	server.Server.OnDidOpenTextDocument(data.OnDocOpen)
 	server.Server.OnDidCloseTextDocument(data.OnDidClose)

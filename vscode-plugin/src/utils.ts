@@ -2,7 +2,7 @@ import { readdirSync } from "fs";
 import * as vscode from "vscode";
 import * as os from "os"
 import * as fs from "fs"
-import { Context } from "./extension";
+import { client, Context } from "./extension";
 import { exec } from "child_process";
 import path = require("path");
 import { pipeline } from "stream";
@@ -17,12 +17,27 @@ type ReleaseInfo = {
     tag_name: string
 }
 
+export function getExtentionPath(): string{
+    return path.join(Context.extensionPath,CMD)
+}
+
 export function isInstalled(): boolean {
     const extPath = Context.extensionPath
     if (readdirSync(extPath).find(f => f === CMD) == undefined) {
+        vscode.window.showInformationMessage("NURU-LSP executable not installed")
         return false
     }
+    vscode.window.showInformationMessage("Yes NURU-LSP executable installed")
     return true
+}
+
+async function showStatusBarMessage(msg: string): Promise<vscode.StatusBarItem>{
+    const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
+    item.text = msg
+    item.color = "green"
+    item.show()
+    Context.subscriptions.push(item)
+    return item
 }
 
 function parseVersionToNumber(version: string): number {
@@ -41,25 +56,25 @@ export async function getLatestReleaseVersion(): Promise<number> {
 }
 
 export async function downloadOrUpdate(): Promise<boolean> {
-    if (isInstalled()) {
-        try {
-            const currentVersion: number = await new Promise((resolve, reject) => {
-                exec(getPathOfCMD() + " --version", (err, stdout, stderr) => {
-                    if (err) {
-                        throw err
-                    }
-                    resolve(parseVersionToNumber(stdout))
-                })
-            })
-            const releaseVer = await getLatestReleaseVersion()
-            if (currentVersion >= releaseVer) {
-                vscode.window.showInformationMessage("You are already using latest executable of nuru-lsp")
-                return true
-            }
-        } catch (e) {
-            return false
-        }
-    }
+    //if (isInstalled()) {
+    //    try {
+    //        const currentVersion: number = await new Promise((resolve, reject) => {
+    //            exec(getPathOfCMD() + " --version", (err, stdout, stderr) => {
+    //                if (err) {
+    //                    throw err
+    //                }
+    //                resolve(parseVersionToNumber(stdout))
+    //            })
+    //        })
+    //        const releaseVer = await getLatestReleaseVersion()
+    //        if (currentVersion >= releaseVer) {
+    //            vscode.window.showInformationMessage("You are already using latest executable of nuru-lsp")
+    //            return true
+    //        }
+    //    } catch (e) {
+    //        return false
+    //    }
+    //}
 
     return await getAndInstallLatest()
 }
@@ -67,6 +82,7 @@ export async function downloadOrUpdate(): Promise<boolean> {
 const getPathOfCMD = () => path.join(Context.extensionPath, CMD)
 
 async function getAndInstallLatest(): Promise<boolean> {
+    const downloadStatus = await showStatusBarMessage("Downloading nuru-lsp")
     const resp = await fetch(LINK_BASE)
     if (!resp.ok) {
         vscode.window.showErrorMessage("Failed to download zip file from: " + LINK_BASE)
@@ -78,16 +94,38 @@ async function getAndInstallLatest(): Promise<boolean> {
     const fstream = fs.createWriteStream(zipPath)
     await promisify(pipeline)(resp.body, fstream)
     await new Promise(resolve => { fstream.close(resolve) })
+    downloadStatus.hide()
+
     let cmd = `tar -xf ${zipPath} -C ${extPath}`
-    if(OSTYPE !== "windows"){
+    if (OSTYPE !== "windows") {
         //cmd to extract zip on linux & mac
-        cmd = `unzip -q ${zipPath} -d ${extPath}`
+        cmd = `unzip ${zipPath} -d ${extPath}`
     }
-    return new Promise(resolve=>exec(`tar -xf ${zipPath} -C ${extPath}`, (err, stdout, stderr) => {
+
+    const extractStatus = await showStatusBarMessage("Extracting nuru-lsp.zip")
+    return new Promise(resolve => exec(cmd, (err, stdout, stderr) => {
         if (err) {
             vscode.window.showErrorMessage(`Failed to extract zip file with commdand:\n ${cmd}`)
             resolve(false)
+            extractStatus.hide()
+            return
         }
+        extractStatus.hide()
         resolve(true)
     }))
+}
+
+export async function launchServer() {
+    if (!isInstalled()) {
+        if(!await downloadOrUpdate()){
+            vscode.window.showErrorMessage("Initial Setup failed, couldn't start LSP, please check you have internet\n"+
+                "then run-> Nuru LSP: Start again"
+            )
+            return;
+        }
+    }
+    vscode.window.showInformationMessage("Starting NURU LSP server")
+    client.start().catch((err) => {
+        vscode.window.showErrorMessage(`Nuru Lsp failed to start error: ${err}`)
+    });
 }

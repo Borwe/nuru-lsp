@@ -1,1 +1,1 @@
-andika("YEAH")
+andika(1,2,3)
