@@ -1,1 +1,2 @@
-andika(1,2,3)
+tumia zimzima
+andika("YEAH")

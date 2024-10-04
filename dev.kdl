@@ -7,6 +7,9 @@ layout {
                         pane name="go build" command="go" start_suspended=true {
                                 args "build"
                         }
+                        pane name="go test" command="go" start_suspended=true {
+                                args "test" "./tests"
+                        }
                         pane name="npm test" cwd="./vscode-plugin" command="npm" start_suspended=true{
                                 args "test"
                         }
