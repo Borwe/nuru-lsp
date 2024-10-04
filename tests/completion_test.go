@@ -62,10 +62,10 @@ func TestTumiaCompletionWithIdentifier(t *testing.T) {
 	}
 }
 
-func TestCompleteTumiaHeaderCompletionToContainNewFileCretedAfter(t *testing.T){
+func TestCompleteTumiaHeaderCompletionToContainNewFileCretedAfter(t *testing.T) {
 	firstEdit := "test123.nr"
 	secondFile := "testhead123.nr"
-	secondFilePakejiname := secondFile[0:len(secondFile)-3]
+	secondFilePakejiname := secondFile[0 : len(secondFile)-3]
 	data, completionParams, _ := CreateCompletionParams(t, defines.Position{
 		Line:      0,
 		Character: 7,
@@ -76,15 +76,15 @@ func TestCompleteTumiaHeaderCompletionToContainNewFileCretedAfter(t *testing.T){
 	for _, item := range *items {
 		itemsLabels = append(itemsLabels, item.Label)
 	}
-	assert.NotContains(t, itemsLabels,secondFilePakejiname)
+	assert.NotContains(t, itemsLabels, secondFilePakejiname)
 
 	//add secondfile
 	_, _, errs := CreateCompletionParams(t, defines.Position{
 		Line:      0,
 		Character: 7,
-	}, []string{ fmt.Sprintf(
-			"pakeji %s { checka = unda(){ andika (\"HAHA\")}}",
-			secondFilePakejiname)}, &secondFile)
+	}, []string{fmt.Sprintf(
+		"pakeji %s { checka = unda(){ andika (\"HAHA\")}}",
+		secondFilePakejiname)}, &secondFile)
 	assert.Equal(t, 0, len(errs), errs)
 	items, err = data.Completions(&completionParams)
 	assert.Nil(t, err)
@@ -92,37 +92,38 @@ func TestCompleteTumiaHeaderCompletionToContainNewFileCretedAfter(t *testing.T){
 	for _, item := range *items {
 		itemsLabels = append(itemsLabels, item.Label)
 	}
-	assert.Contains(t, itemsLabels,secondFilePakejiname)
+	assert.Contains(t, itemsLabels, secondFilePakejiname)
 }
 
-//func TestVariableFunctionCompletionWithoutIdentifier(t *testing.T) {
-//	//create a completions params
-//	data, completionParams := createCompletionParams(t, defines.Position{
-//		Line:      5,
-//		Character: 0,
-//	}, []string{"tumia test",
-//		"fanya checka = unda(){ andika(\"Yolo\");}",
-//		"wewe = unda(){ andika(\"WEWE\");}",
-//		"yolo = 123",
-//		"chora = \"50 Cent\"",
-//		"",
-//	}, nil)
-//
-//	items, err := data.Completions(&completionParams)
-//	assert.Nil(t, err)
-//
-//	//fill completions expected
-//	completions_expected := []string{"test", "checka", "wewe", "yolo", "chora"}
-//
-//	itemsLabels := []string{}
-//	for _, item := range *items {
-//		itemsLabels = append(itemsLabels, item.Label)
-//	}
-//
-//	assert.Equal(t, len(completions_expected), len(itemsLabels),
-//		"Not same number of items in completion to the expected")
-//
-//	for _, item := range completions_expected {
-//		assert.Contains(t, itemsLabels, item)
-//	}
-//}
+func TestVariableFunctionCompletionWithoutIdentifier(t *testing.T) {
+	fmt.Println("INDENT TESTING STARTED")
+	//create a completions params
+	data, completionParams, errs := CreateCompletionParams(t, defines.Position{
+		Line:      5,
+		Character: 0,
+	}, []string{"tumia test",
+		"fanya checka = unda(){ andika(\"Yolo\");}",
+		"wewe = unda(){ andika(\"WEWE\");}",
+		"yolo = 123",
+		"chora = \"50 Cent\"",
+		"",
+	}, nil)
+	assert.Equal(t, 0, len(errs))
+
+	items, err := data.Completions(&completionParams)
+	assert.Nil(t, err)
+
+	//fill completions expected
+	completions_expected := []string{"checka", "wewe", "yolo", "chora"}
+
+	itemsLabels := []string{}
+	for _, item := range *items {
+		itemsLabels = append(itemsLabels, item.Label)
+	}
+
+	assert.Greater(t,len(itemsLabels),0)
+	t.Log("ITEMS: ",itemsLabels)
+	for _, item := range completions_expected {
+		assert.Contains(t, itemsLabels, item)
+	}
+}
