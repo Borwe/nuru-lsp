@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/url"
 	data_mod "nuru-lsp/data"
-	"nuru-lsp/setup"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -33,7 +32,6 @@ func CreateImaginaryFilePath(file *string) (*string, error){
 func CreateCompletionParams(t *testing.T,
 	position defines.Position,
 	docInput []string, path *string) (data_mod.Data, defines.CompletionParams, []string) {
-	setup.SetupLog()
 
 	path, err := CreateImaginaryFilePath(path)
 	assert.Nil(t,err)

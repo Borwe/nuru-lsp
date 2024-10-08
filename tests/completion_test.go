@@ -3,14 +3,17 @@ package tests
 import (
 	"fmt"
 	data_mod "nuru-lsp/data"
+	"nuru-lsp/setup"
 	"strings"
 	"testing"
 
+	"github.com/Borwe/go-lsp/logs"
 	"github.com/Borwe/go-lsp/lsp/defines"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTumiaCompletionNoIdentifier(t *testing.T) {
+	setup.SetupLog()
 	//create a completions params
 	data, completionParams, _ := CreateCompletionParams(t, defines.Position{
 		Line:      0,
@@ -32,6 +35,7 @@ func TestTumiaCompletionNoIdentifier(t *testing.T) {
 }
 
 func TestTumiaCompletionWithIdentifier(t *testing.T) {
+	setup.SetupLog()
 	//create a completions params
 	data, completionParams, _ := CreateCompletionParams(t, defines.Position{
 		Line:      0,
@@ -63,6 +67,7 @@ func TestTumiaCompletionWithIdentifier(t *testing.T) {
 }
 
 func TestCompleteTumiaHeaderCompletionToContainNewFileCretedAfter(t *testing.T) {
+	setup.SetupLog()
 	firstEdit := "test123.nr"
 	secondFile := "testhead123.nr"
 	secondFilePakejiname := secondFile[0 : len(secondFile)-3]
@@ -96,7 +101,7 @@ func TestCompleteTumiaHeaderCompletionToContainNewFileCretedAfter(t *testing.T) 
 }
 
 func TestVariableFunctionCompletionWithoutIdentifierOnNewLine(t *testing.T) {
-	fmt.Println("INDENT TESTING STARTED")
+	setup.SetupLog()
 	//create a completions params
 	data, completionParams, errs := CreateCompletionParams(t, defines.Position{
 		Line:      5,
@@ -128,36 +133,73 @@ func TestVariableFunctionCompletionWithoutIdentifierOnNewLine(t *testing.T) {
 	}
 }
 
+func TestVariableFunctionCompletionWithoutIdentifierOnNotNewLine(t *testing.T) {
+	setup.SetupLog()
+	logs.Println("INDENT TESTING STARTED")
+	//create a completions params
+	data, completionParams, errs := CreateCompletionParams(t, defines.Position{
+		Line:      6,
+		Character: 4,
+	}, []string{"tumia test",
+		"fanya checka = unda(){ andika(\"Yolo\");}",
+		"wewe = unda(){ andika(\"WEWE\");}",
+		"yolo = 123",
+		"chora = \"50 Cent\"",
+		"fanya hotdamn = unda(){",
+		"    ",
+		"}",
+	}, nil)
+	assert.Equal(t, 0, len(errs))
 
-//func TestVariableFunctionCompletionWithoutIdentifierOnNewLine(t *testing.T) {
-//	fmt.Println("INDENT TESTING STARTED")
-//	//create a completions params
-//	data, completionParams, errs := CreateCompletionParams(t, defines.Position{
-//		Line:      5,
-//		Character: 0,
-//	}, []string{"tumia test",
-//		"fanya checka = unda(){ andika(\"Yolo\");}",
-//		"wewe = unda(){ andika(\"WEWE\");}",
-//		"yolo = 123",
-//		"chora = \"50 Cent\"",
-//		"",
-//	}, nil)
-//	assert.Equal(t, 0, len(errs))
-//
-//	items, err := data.Completions(&completionParams)
-//	assert.Nil(t, err)
-//
-//	//fill completions expected
-//	completions_expected := []string{"test", "checka", "wewe", "yolo", "chora"}
-//
-//	itemsLabels := []string{}
-//	for _, item := range *items {
-//		itemsLabels = append(itemsLabels, item.Label)
-//	}
-//
-//	assert.Greater(t, len(itemsLabels), 0)
-//	t.Log("ITEMS: ", itemsLabels)
-//	for _, item := range completions_expected {
-//		assert.Contains(t, itemsLabels, item)
-//	}
-//}
+	items, err := data.Completions(&completionParams)
+	assert.Nil(t, err)
+
+	//fill completions expected
+	completions_expected := []string{"test", "checka", "wewe", "yolo", "chora"}
+
+	itemsLabels := []string{}
+	for _, item := range *items {
+		itemsLabels = append(itemsLabels, item.Label)
+	}
+
+	assert.Greater(t, len(itemsLabels), 0)
+	t.Log("ITEMS: ", itemsLabels)
+	for _, item := range completions_expected {
+		assert.Contains(t, itemsLabels, item)
+	}
+}
+
+func TestVariableFunctionCompletionWithIdentifierOnNewLine(t *testing.T) {
+	setup.SetupLog()
+	logs.Println("INDENT TESTING STARTED")
+	//create a completions params
+	data, completionParams, errs := CreateCompletionParams(t, defines.Position{
+		Line:      5,
+		Character: 2,
+	}, []string{"tumia test",
+		"fanya checka = unda(){ andika(\"Yolo\");}",
+		"wewe = unda(){ andika(\"WEWE\");}",
+		"yolo = 123",
+		"chora = \"50 Cent\"",
+		"ch",
+	}, nil)
+	assert.Equal(t, 0, len(errs), errs)
+
+	items, err := data.Completions(&completionParams)
+	assert.Nil(t, err, err)
+
+	//fill completions expected
+	completions_expected := []string{"checka", "chora"}
+
+	itemsLabels := []string{}
+	for _, item := range *items {
+		itemsLabels = append(itemsLabels, item.Label)
+	}
+
+	assert.Greater(t, len(itemsLabels), 0)
+	assert.NotContains(t, itemsLabels, "wewe", "wewe does not contain a ch character, so shouldn't be a completion")
+	t.Log("ITEMS: ", itemsLabels)
+	for _, item := range completions_expected {
+		assert.Contains(t, itemsLabels, item)
+	}
+}
