@@ -2,8 +2,8 @@ package completions
 
 import (
 	"context"
+	"errors"
 	"nuru-lsp/data"
-	"strings"
 
 	"github.com/Borwe/go-lsp/logs"
 	"github.com/Borwe/go-lsp/lsp/defines"
@@ -52,7 +52,7 @@ var Keywords = []string{
 
 var Candidates = new(map[string]uint64)
 
-func defaultCompletionGenerator() (*[]defines.CompletionItem, error) {
+func DefaultCompletionGenerator() (*[]defines.CompletionItem, error) {
 	result := make([]defines.CompletionItem, 0)
 
 	funcsKind := defines.CompletionItemKindFunction
@@ -80,9 +80,8 @@ func CompletionFunc(ctx context.Context,
 	req *defines.CompletionParams) (*[]defines.CompletionItem, error) {
 
 	file := string(req.TextDocument.Uri)
-	position := req.TextDocumentPositionParams.Position
 
-	defaultCompletion, _ := defaultCompletionGenerator()
+	defaultCompletion, _ := DefaultCompletionGenerator()
 
 	data.PagesMutext.Lock()
 	defer data.PagesMutext.Unlock()
@@ -90,7 +89,8 @@ func CompletionFunc(ctx context.Context,
 	doc, found := data.Pages[file]
 
 	if found == false {
-		return defaultCompletion, nil
+		//This should technically never run, as all docs must exist
+		return nil, errors.New("DOC NOT FOUND")
 	}
 
 	logs.Println("POSITIONS:", req.Position)
@@ -98,49 +98,12 @@ func CompletionFunc(ctx context.Context,
 	for _,l := range doc.Content{
 		logs.Println(l)
 	}
-	docCompletions, err := doc.Completions(req)
+
+	docCompletions, err := doc.Completions(req, defaultCompletion)
 	if err!=nil || docCompletions == nil{
 		logs.Println("WTF? GANI TENA?", err, docCompletions)
 		return defaultCompletion, nil
 	}
 
-	if len(*docCompletions)>0 {
-		return docCompletions, nil
-	}
-
-	//get the word to be completed
-	wordToCompelte := ""
-	line := doc.Content[position.Line]
-	startPosition := position.Character - 1
-	for startPosition >= 0 && startPosition < uint(len(line)) {
-		//get space symbolizing start of new word
-		if line[startPosition] == ' ' {
-			startPosition += 1
-			break
-		}
-		//get space symbolizing start of new word after a dot
-		if line[startPosition] == '.' {
-			startPosition += 1
-			break
-		}
-		if startPosition == 0 {
-			break
-		}
-		startPosition -= 1
-	}
-	wordToCompelte = line[startPosition:position.Character]
-
-	if len(wordToCompelte) == 0 {
-		//return using all keywods
-		return defaultCompletion, nil
-	} else {
-		//filter the data to be sent
-		finalData := make([]defines.CompletionItem, 0)
-		for _, v := range *defaultCompletion {
-			if strings.Contains(v.Label, wordToCompelte) {
-				finalData = append(finalData, v)
-			}
-		}
-		return &finalData, nil
-	}
+	return docCompletions, nil
 }

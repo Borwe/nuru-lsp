@@ -303,7 +303,7 @@ func getNuruFilesInDir(dir string) []fs.DirEntry {
 	return result
 }
 
-func getTumiaIdentifiers(node *ast.Node) []*ast.Identifier{
+func getTumiaIdentifiers(node *ast.Node) []*ast.Identifier {
 	tumiaIdentifiers := []*ast.Identifier{}
 	tumiaLists := []*ast.Import{}
 	getAsts(*node, &tumiaLists)
@@ -343,7 +343,10 @@ func (d *Data) getCompletions(word *string) (*[]defines.CompletionItem, error) {
 
 		funcKind := defines.CompletionItemKindFunction
 		label := val.Name.String()
-		detail := val.String()
+		detail := ""
+		if val.Value != nil {
+			detail = val.String()
+		}
 		logs.Println("NAMED:", label, "VAL", detail)
 
 		completions = append(completions, defines.CompletionItem{
@@ -358,7 +361,10 @@ func (d *Data) getCompletions(word *string) (*[]defines.CompletionItem, error) {
 
 		kind := defines.CompletionItemKindField
 		label := val.Name.String()
-		detail := val.String()
+		detail := ""
+		if val.Value != nil {
+			detail = val.String()
+		}
 		fmt.Println("NAMED:", label, "VAL", detail)
 
 		completions = append(completions, defines.CompletionItem{
@@ -370,22 +376,37 @@ func (d *Data) getCompletions(word *string) (*[]defines.CompletionItem, error) {
 		})
 	}
 
-	if( word!= nil && *word == ""){
-		return nil, errors.New(fmt.Sprint("Passed an empy string for completions:",*word, "As word"))
-	}else if(word == nil){
+	if word != nil && *word == "" {
+		return nil, errors.New(fmt.Sprint("Passed an empy string for completions:", *word, "As word"))
+	} else if word == nil {
 		return &completions, nil
 	}
 
 	finalCompletion := []defines.CompletionItem{}
 	for _, completion := range completions {
-		if strings.Contains(completion.Label, *word){
+		if strings.Contains(completion.Label, *word) {
 			finalCompletion = append(finalCompletion, completion)
 		}
 	}
 	return &finalCompletion, nil
 }
 
-func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines.CompletionItem, error) {
+func combineCompletions(completions []defines.CompletionItem,
+	toAdd *[]defines.CompletionItem, filter *string) *[]defines.CompletionItem {
+	if toAdd!=nil {
+		for _, item := range *toAdd {
+			if filter == nil || *filter == "=" || item.Label == *filter {
+				logs.Println("ADDING:",item.Label)
+				completions = append(completions, item)
+			}
+		}
+	}
+	logs.Println("COMPLETION ITEMS:",completions)
+	return &completions
+}
+
+func (d *Data) Completions(completeParams *defines.CompletionParams,
+	defaultCompletions *[]defines.CompletionItem) (*[]defines.CompletionItem, error) {
 	//get current word, otherwise get previous
 	var word *string = nil
 	var prevWord *string = nil
@@ -408,13 +429,18 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 	//meaning we have no input from user to go by
 	//so just get all idenfitiers available
 	if (prevWord == nil && word == nil) || (*prevWord == "" && *word == "") {
-		return d.getCompletions(nil)
+		completes, err := d.getCompletions(nil)
+		if err != nil {
+			return defaultCompletions, nil
+		}
+		return combineCompletions(*completes, defaultCompletions, nil), nil
 	}
+
 
 	switch *word {
 	case "tumia":
 		//get all files in directory of current data
-		logs.Println("FILE COMPLETING:", d.File)
+		logs.Println("TUMIA FILE COMPLETING:", d.File)
 		packajiFiles := []string{}
 		dir := path.Dir(d.File)
 		files := getNuruFilesInDir(dir)
@@ -524,12 +550,16 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 				}
 			}
 			return &completions, nil
-		} else if word != nil && *word != "" {
-			return d.getCompletions(word)
+		} else if word != nil && *word != "" && !(prevWord!=nil && *prevWord == "fanya") {
+			completions, err := d.getCompletions(word)
+			if err!= nil {
+				return defaultCompletions, err
+			}
+			logs.Println("PREVWORD:",*prevWord,"WORD:",*word)
+			return combineCompletions(*completions, defaultCompletions, nil), nil
 		}
 		return nil, errors.New(fmt.Sprintf("%s prev->%s word->%s", "NOT IMPLEMENTED", *prevWord, *word))
 	}
-
 }
 
 func (d *Data) getAllVariablesAndFunctions() *[]defines.CompletionItem {

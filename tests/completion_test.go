@@ -20,7 +20,7 @@ func TestTumiaCompletionNoIdentifier(t *testing.T) {
 		Character: 6,
 	}, []string{"tumia "}, nil)
 
-	items, err := data.Completions(&completionParams)
+	items, err := data.Completions(&completionParams, nil)
 	assert.Nil(t, err)
 	tumias := append(data_mod.TUMIAS, "test", "full_pakeji")
 
@@ -42,7 +42,7 @@ func TestTumiaCompletionWithIdentifier(t *testing.T) {
 		Character: 7,
 	}, []string{"tumia t"}, nil)
 
-	items, err := data.Completions(&completionParams)
+	items, err := data.Completions(&completionParams, nil)
 	assert.Nil(t, err)
 
 	//fill tumias
@@ -75,7 +75,7 @@ func TestCompleteTumiaHeaderCompletionToContainNewFileCretedAfter(t *testing.T) 
 		Line:      0,
 		Character: 7,
 	}, []string{"tumia t"}, &firstEdit)
-	items, err := data.Completions(&completionParams)
+	items, err := data.Completions(&completionParams, nil)
 	assert.Nil(t, err)
 	itemsLabels := []string{}
 	for _, item := range *items {
@@ -91,7 +91,7 @@ func TestCompleteTumiaHeaderCompletionToContainNewFileCretedAfter(t *testing.T) 
 		"pakeji %s { checka = unda(){ andika (\"HAHA\")}}",
 		secondFilePakejiname)}, &secondFile)
 	assert.Equal(t, 0, len(errs), errs)
-	items, err = data.Completions(&completionParams)
+	items, err = data.Completions(&completionParams, nil)
 	assert.Nil(t, err)
 	itemsLabels = []string{}
 	for _, item := range *items {
@@ -115,7 +115,7 @@ func TestVariableFunctionCompletionWithoutIdentifierOnNewLine(t *testing.T) {
 	}, nil)
 	assert.Equal(t, 0, len(errs))
 
-	items, err := data.Completions(&completionParams)
+	items, err := data.Completions(&completionParams, nil)
 	assert.Nil(t, err)
 
 	//fill completions expected
@@ -126,7 +126,7 @@ func TestVariableFunctionCompletionWithoutIdentifierOnNewLine(t *testing.T) {
 		itemsLabels = append(itemsLabels, item.Label)
 	}
 
-	assert.Greater(t, len(itemsLabels), 0)
+	assert.Greater(t, len(itemsLabels), 0, items)
 	t.Log("ITEMS: ", itemsLabels)
 	for _, item := range completions_expected {
 		assert.Contains(t, itemsLabels, item)
@@ -151,7 +151,7 @@ func TestVariableFunctionCompletionWithoutIdentifierOnNotNewLine(t *testing.T) {
 	}, nil)
 	assert.Equal(t, 0, len(errs))
 
-	items, err := data.Completions(&completionParams)
+	items, err := data.Completions(&completionParams, nil)
 	assert.Nil(t, err)
 
 	//fill completions expected
@@ -185,7 +185,7 @@ func TestVariableFunctionCompletionWithIdentifierOnNewLine(t *testing.T) {
 	}, nil)
 	assert.Equal(t, 0, len(errs), errs)
 
-	items, err := data.Completions(&completionParams)
+	items, err := data.Completions(&completionParams, nil)
 	assert.Nil(t, err, err)
 
 	//fill completions expected
