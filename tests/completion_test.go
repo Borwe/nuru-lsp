@@ -95,7 +95,7 @@ func TestCompleteTumiaHeaderCompletionToContainNewFileCretedAfter(t *testing.T) 
 	assert.Contains(t, itemsLabels, secondFilePakejiname)
 }
 
-func TestVariableFunctionCompletionWithoutIdentifier(t *testing.T) {
+func TestVariableFunctionCompletionWithoutIdentifierOnNewLine(t *testing.T) {
 	fmt.Println("INDENT TESTING STARTED")
 	//create a completions params
 	data, completionParams, errs := CreateCompletionParams(t, defines.Position{
@@ -114,16 +114,50 @@ func TestVariableFunctionCompletionWithoutIdentifier(t *testing.T) {
 	assert.Nil(t, err)
 
 	//fill completions expected
-	completions_expected := []string{"checka", "wewe", "yolo", "chora"}
+	completions_expected := []string{"test", "checka", "wewe", "yolo", "chora"}
 
 	itemsLabels := []string{}
 	for _, item := range *items {
 		itemsLabels = append(itemsLabels, item.Label)
 	}
 
-	assert.Greater(t,len(itemsLabels),0)
-	t.Log("ITEMS: ",itemsLabels)
+	assert.Greater(t, len(itemsLabels), 0)
+	t.Log("ITEMS: ", itemsLabels)
 	for _, item := range completions_expected {
 		assert.Contains(t, itemsLabels, item)
 	}
 }
+
+
+//func TestVariableFunctionCompletionWithoutIdentifierOnNewLine(t *testing.T) {
+//	fmt.Println("INDENT TESTING STARTED")
+//	//create a completions params
+//	data, completionParams, errs := CreateCompletionParams(t, defines.Position{
+//		Line:      5,
+//		Character: 0,
+//	}, []string{"tumia test",
+//		"fanya checka = unda(){ andika(\"Yolo\");}",
+//		"wewe = unda(){ andika(\"WEWE\");}",
+//		"yolo = 123",
+//		"chora = \"50 Cent\"",
+//		"",
+//	}, nil)
+//	assert.Equal(t, 0, len(errs))
+//
+//	items, err := data.Completions(&completionParams)
+//	assert.Nil(t, err)
+//
+//	//fill completions expected
+//	completions_expected := []string{"test", "checka", "wewe", "yolo", "chora"}
+//
+//	itemsLabels := []string{}
+//	for _, item := range *items {
+//		itemsLabels = append(itemsLabels, item.Label)
+//	}
+//
+//	assert.Greater(t, len(itemsLabels), 0)
+//	t.Log("ITEMS: ", itemsLabels)
+//	for _, item := range completions_expected {
+//		assert.Contains(t, itemsLabels, item)
+//	}
+//}

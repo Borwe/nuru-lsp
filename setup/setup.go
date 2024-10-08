@@ -1,6 +1,7 @@
 package setup
 
 import (
+	"flag"
 	"log"
 	"os"
 
@@ -9,6 +10,10 @@ import (
 
 func getLogFile() (bool, *string) {
 	if len(os.Args) == 1 {
+		return false, nil
+	}
+	//test mode for testing ./tests files
+	if flag.Lookup("test.v") != nil {
 		return false, nil
 	}
 	if os.Args[1] == "--stdio" {

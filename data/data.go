@@ -104,57 +104,57 @@ func getAsts[T ast.Node](node ast.Node, result *[]T) {
 	case T:
 		tmp := append(*result, node)
 		*result = tmp
-		fmt.Println("YOOOOOOOOOOOOOOOOOOOOOOOO")
+		logs.Println("YOOOOOOOOOOOOOOOOOOOOOOOO")
 		break
 	case *ast.Program:
-		fmt.Println("Pogram")
+		logs.Println("Pogram")
 		for _, stmt := range node.Statements {
 			getAsts(stmt, result)
 		}
 		break
 	case *ast.ExpressionStatement:
-		fmt.Println("ExpressionStatement")
+		logs.Println("ExpressionStatement")
 		getAsts(node.Expression, result)
 		break
 	case *ast.IntegerLiteral:
 	case *ast.FloatLiteral:
 	case *ast.Boolean:
-		fmt.Println("Literal")
+		logs.Println("Literal")
 		break
 	case *ast.PrefixExpression:
-		fmt.Println("PrefixExpression")
+		logs.Println("PrefixExpression")
 		getAsts(node.Right, result)
 		break
 	case *ast.InfixExpression:
-		fmt.Println("InfixExpression")
+		logs.Println("InfixExpression")
 		getAsts(node.Left, result)
 		getAsts(node.Right, result)
 		break
 	case *ast.PostfixExpression:
-		fmt.Println("PostfixExpression")
+		logs.Println("PostfixExpression")
 		break
 	case *ast.BlockStatement:
-		fmt.Println("BlockStatement")
+		logs.Println("BlockStatement")
 		for _, stmt := range node.Statements {
 			getAsts(stmt, result)
 		}
 		break
 	case *ast.IfExpression:
-		fmt.Println("IfExpression")
+		logs.Println("IfExpression")
 		getAsts(node.Condition, result)
 		getAsts(node.Alternative, result)
 		getAsts(node.Consequence, result)
 		break
 	case *ast.ReturnStatement:
-		fmt.Println("ReturnStatement")
+		logs.Println("ReturnStatement")
 		getAsts(node.ReturnValue, result)
 		break
 	case *ast.LetStatement:
-		fmt.Println("LetStatement")
+		logs.Println("LetStatement")
 		getAsts(node.Value, result)
 		break
 	case *ast.FunctionLiteral:
-		fmt.Println("FunctionLiteral")
+		logs.Println("FunctionLiteral")
 		getAsts(node.Body, result)
 		for _, stmt := range node.Parameters {
 			getAsts(stmt, result)
@@ -164,32 +164,32 @@ func getAsts[T ast.Node](node ast.Node, result *[]T) {
 		}
 		break
 	case *ast.PropertyExpression:
-		fmt.Println("PropertyExpression")
+		logs.Println("PropertyExpression")
 		getAsts(node.Object, result)
 		getAsts(node.Property, result)
 		break
 	case *ast.PropertyAssignment:
-		fmt.Println("PropertyAssignment")
+		logs.Println("PropertyAssignment")
 		getAsts(node.Name, result)
 		getAsts(node.Value, result)
 		break
 	case *ast.Assign:
-		fmt.Println("Assign")
+		logs.Println("Assign")
 		getAsts(node.Name, result)
 		getAsts(node.Value, result)
 		break
 	case *ast.AssignEqual:
-		fmt.Println("AssignEqual")
+		logs.Println("AssignEqual")
 		getAsts(node.Left, result)
 		getAsts(node.Value, result)
 		break
 	case *ast.AssignmentExpression:
-		fmt.Println("AssignmentExpression")
+		logs.Println("AssignmentExpression")
 		getAsts(node.Left, result)
 		getAsts(node.Value, result)
 		break
 	case *ast.MethodExpression:
-		fmt.Println("MethodExpression")
+		logs.Println("MethodExpression")
 		getAsts(node.Object, result)
 		getAsts(node.Method, result)
 		for _, stmt := range node.Defaults {
@@ -200,7 +200,7 @@ func getAsts[T ast.Node](node ast.Node, result *[]T) {
 		}
 		break
 	case *ast.Import:
-		fmt.Println("Import")
+		logs.Println("Import")
 		for _, stmt := range node.Identifiers {
 			if _, ok := module.Mapper[stmt.Value]; ok {
 				continue
@@ -210,67 +210,67 @@ func getAsts[T ast.Node](node ast.Node, result *[]T) {
 		}
 		break
 	case *ast.CallExpression:
-		fmt.Println("CallExpression")
+		logs.Println("CallExpression")
 		getAsts(node.Function, result)
 		for _, stmt := range node.Arguments {
 			getAsts(stmt, result)
 		}
 		break
 	case *ast.StringLiteral:
-		fmt.Println("StringLiteral")
+		logs.Println("StringLiteral")
 		break
 	case *ast.At:
-		fmt.Println("At")
+		logs.Println("At")
 		break
 	case *ast.ArrayLiteral:
-		fmt.Println("ArrayLiteral")
+		logs.Println("ArrayLiteral")
 		for _, stmt := range node.Elements {
 			getAsts(stmt, result)
 		}
 		break
 	case *ast.IndexExpression:
-		fmt.Println("IndexExpression")
+		logs.Println("IndexExpression")
 		getAsts(node.Left, result)
 		getAsts(node.Index, result)
 		break
 	case *ast.DictLiteral:
-		fmt.Println("DictLiteral")
+		logs.Println("DictLiteral")
 		for stmt1, stmt2 := range node.Pairs {
 			getAsts(stmt1, result)
 			getAsts(stmt2, result)
 		}
 		break
 	case *ast.WhileExpression:
-		fmt.Println("WhileExpression")
+		logs.Println("WhileExpression")
 		getAsts(node.Condition, result)
 		getAsts(node.Consequence, result)
 		break
 	case *ast.Break:
 	case *ast.Continue:
-		fmt.Println("BreakOrContinue")
+		logs.Println("BreakOrContinue")
 		break
 	case *ast.SwitchExpression:
-		fmt.Println("SwitchExpression")
+		logs.Println("SwitchExpression")
 		getAsts(node.Value, result)
 		for _, stmt := range node.Choices {
 			getAsts(stmt, result)
 		}
 		break
 	case *ast.Null:
-		fmt.Println("Null")
+		logs.Println("Null")
 		break
 	case *ast.ForIn:
-		fmt.Println("ForIn")
+		logs.Println("ForIn")
 		getAsts(node.Iterable, result)
 		getAsts(node.Block, result)
 		break
 	case *ast.Package:
-		fmt.Println("Package")
+		logs.Println("Package")
 		getAsts(node.Name, result)
 		getAsts(node.Block, result)
 		break
 	case *ast.Identifier:
-		fmt.Println("Identifier")
+		logs.Println("Identifier")
 		break
 	}
 }
@@ -326,13 +326,35 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 	//meaning we have no input from user to go by
 	//so just get all idenfitiers available
 	if (prevWord == nil && word == nil) || (*prevWord == "" && *word == "") {
+		completions := []defines.CompletionItem{}
+		//get all the tumias
+		tumiaLists := []*ast.Import{}
+		tumiaIdentifiers := []*ast.Identifier{}
+		getAsts(*d.RootTree, &tumiaLists )
+		for _, tumias := range tumiaLists {
+			getAsts(tumias, &tumiaIdentifiers)
+		}
+		for _, val := range tumiaIdentifiers {
+			kind := defines.CompletionItemKindFile
+			label := val.String()
+			detail := "Ni pakeji"
+			logs.Println("TUMIAS NAMED:", label,"VAL", detail)
+
+			completions = append(completions, defines.CompletionItem{
+				Kind:  &kind,
+				Label: label,
+				LabelDetails: &defines.CompletionItemLabelDetails{
+					Detail: &detail,
+				} ,
+			})
+		}
+
 		//get all Identifiers in current file
 		letEquals := []*ast.LetStatement{}
 		getAsts(*d.RootTree, &letEquals)
 		assignmentEquals := []*ast.Assign{}
 		getAsts(*d.RootTree, &assignmentEquals)
 
-		completions := []defines.CompletionItem{}
 
 		//get variables
 		for _, val := range letEquals {
@@ -340,7 +362,7 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 			funcKind := defines.CompletionItemKindFunction
 			label := val.Name.String()
 			detail := val.String()
-			fmt.Println("NAMED:", label,"VAL", detail)
+			logs.Println("NAMED:", label,"VAL", detail)
 
 			completions = append(completions, defines.CompletionItem{
 				Kind:  &funcKind,
