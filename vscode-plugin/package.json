@@ -22,11 +22,17 @@
   "contributes": {
     "configuration": {
       "title": "Nuru-Lsp",
+      "type": "object",
       "properties": {
-        "nuru-lsp.debug": {
+        "nuru-lsp.dbg": {
           "type": "boolean",
           "default": false,
-          "description": "Enable debug logging to logs.lsp file in workspace folder"
+          "description": "Enable debug logging to logs.lsp file in workspace folder.\nRestart Vscode after changing this"
+        },
+        "nuru-lsp.execPath": {
+          "type": "string",
+          "default": "",
+          "description": "Location where to search for custom Nuru LSP executable, leave empty to let plugin get the latest version available which is the default\nRestart Vscode after changing this."
         }
       }
     },
@@ -79,7 +85,6 @@
     "vscode-languageclient": "^8.1.0"
   },
   "devDependencies": {
-    "vsce": "^2.15.0",
     "@types/adm-zip": "^0.5.5",
     "@types/mocha": "^10.0.8",
     "@types/node": "^20.5.7",
@@ -90,6 +95,7 @@
     "mocha": "^10.7.3",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.2",
+    "vsce": "^2.15.0",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   }

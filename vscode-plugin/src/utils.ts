@@ -8,7 +8,7 @@ import path = require("path");
 import { pipeline } from "stream";
 import { promisify } from "util";
 
-const CMD: string = os.platform() == "win32" ? "nuru-lsp.exe" : "nuru-lsp"
+export const CMD: string = os.platform() == "win32" ? "nuru-lsp.exe" : "nuru-lsp"
 export const VERSION = "0.0.07"
 const OSTYPE = os.platform() === "win32" ? "windows" : os.platform() === "linux" ? "ubuntu" : os.platform() === "darwin" ? "macos" : "noooo"
 const LINK_BASE = `https://github.com/Borwe/nuru-lsp/releases/download/v${VERSION}/nuru-lsp-${OSTYPE}-latest.zip`
@@ -17,15 +17,22 @@ type ReleaseInfo = {
     tag_name: string
 }
 
-export function getExtentionPath(): string {
+export type CommandType = { cmd: string, args: string[] }
+
+export function getExtentionPath(): CommandType {
     //check if debug enabled
-    let cmd = CMD
-    if(vscode.workspace.getConfiguration("nuru-lsp").get("debug", false)) {
-        cmd += " "+path.join(Context.extensionPath,"lsp.log")
+    let args: string | undefined = undefined;
+    const isDebug = vscode.workspace.getConfiguration("nuru-lsp").get<boolean>("dbg")
+    if (isDebug) {
+        args = path.join(Context.extensionPath, "lsp.log")
     }
-    cmd = path.join(Context.extensionPath, cmd)
-    vscode.window.showInformationMessage("NURU-LSP server path: " + cmd)
-    return cmd
+    const cmd = getPathOfCMD()
+    vscode.window.showInformationMessage("NURU-LSP server path: " +
+        cmd + " " + args)
+    return {
+        cmd: cmd,
+        args: args != undefined ? [args] : []
+    }
 }
 
 export function isInstalled(): boolean {
@@ -63,30 +70,32 @@ export async function getLatestReleaseVersion(): Promise<number> {
 
 export async function downloadOrUpdate(): Promise<boolean> {
     if (isInstalled()) {
-        try {
-            const currentVersion: number = await new Promise((resolve, reject) => {
-                exec(getPathOfCMD() + " --version", (err, stdout, stderr) => {
-                    if (err) {
-                        throw err
-                    }
-                    resolve(parseVersionToNumber(stdout))
-                })
+        const currentVersion: number = await new Promise((resolve, reject) => {
+            exec(getPathOfCMD() + " --version", (err, stdout, stderr) => {
+                if (err) {
+                    vscode.window.showInformationMessage("FAILED Getting version info:" + err)
+                    return 0
+                }
+                resolve(parseVersionToNumber(stdout))
             })
-            const releaseVer = await getLatestReleaseVersion()
-            if (currentVersion >= releaseVer) {
-                vscode.window.showInformationMessage("You are already using latest executable of nuru-lsp")
-                return true
-            }
-        } catch (e) {
-            return false
+        })
+        const releaseVer = await getLatestReleaseVersion()
+        if (currentVersion >= releaseVer) {
+            vscode.window.showInformationMessage("You are already using latest executable of nuru-lsp")
+            return true
         }
     }
 
-    vscode.window.showInformationMessage("NURU LSP server setup complete")
     return await getAndInstallLatest()
 }
 
-const getPathOfCMD = () => path.join(Context.extensionPath, CMD)
+function getPathOfCMD(): string {
+    const pathLoc = vscode.workspace.getConfiguration("nuru-lsp").get<string>("execPath").replace(/\\/g, "/")
+    if (pathLoc == undefined || pathLoc.length == 0) {
+        return path.join(Context.extensionPath, CMD).replace(/\\/g, "/")
+    }
+    return pathLoc
+}
 
 async function getAndInstallLatest(): Promise<boolean> {
     const downloadStatus = await showStatusBarMessage("Downloading nuru-lsp")
@@ -119,6 +128,7 @@ async function getAndInstallLatest(): Promise<boolean> {
         }
         extractStatus.hide()
         resolve(true)
+        vscode.window.showInformationMessage("NURU LSP server setup complete")
     }))
 }
 

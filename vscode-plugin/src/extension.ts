@@ -49,14 +49,14 @@ export function activate(context: ExtensionContext) {
 
 
   const serverOptions: ServerOptions = {
-    run: { command: command, transport: TransportKind.stdio },
-    debug: { command: command, transport: TransportKind.stdio },
+    run: { command: command.cmd, args: command.args, transport: TransportKind.stdio },
+    debug: { command: command.cmd, args: command.args, transport: TransportKind.stdio },
   };
 
   // Options to control the language client
   const clientOptions: LanguageClientOptions = {
     // Register the server for all documents by default
-    documentSelector: [{ language: "nr", scheme:"file" }],
+    documentSelector: [{ language: "nr", scheme: "file" }],
     synchronize: {
       // Notify the server about file changes to '.clientrc files contained in the workspace
       fileEvents: workspace.createFileSystemWatcher("**/*.{nr,sr}"),
