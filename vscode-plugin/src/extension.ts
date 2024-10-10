@@ -8,7 +8,7 @@ import {
   ServerOptions,
   TransportKind,
 } from "vscode-languageclient/node";
-import { downloadOrUpdate, getExtentionPath, isInstalled, launchServer, VERSION } from "./utils";
+import { downloadOrUpdate, getExtentionPath, isInstalled, handleLaunchingServer, VERSION } from "./utils";
 
 export let Context: ExtensionContext
 
@@ -21,6 +21,7 @@ export function activate(context: ExtensionContext) {
   //register commands
   commands.registerCommand("nuru.languageserver.is-installed", isInstalled);
   commands.registerCommand("nuru.languageserver.download", downloadOrUpdate);
+  commands.registerCommand("nuru.languageserver.command", getExtentionPath)
   commands.registerCommand("nuru.languageserver.is-running", () => {
     if (client && client.isRunning()) {
       return true
@@ -31,12 +32,12 @@ export function activate(context: ExtensionContext) {
     if (client.isRunning()) {
       await client.stop()
     }
-    launchServer()
+    handleLaunchingServer()
     window.showInformationMessage("Nuru LSP restarted")
   });
   commands.registerCommand("nuru.languageserver.start", async () => {
     if (!client.isRunning()) {
-      launchServer()
+      handleLaunchingServer()
     }
   });
   commands.registerCommand("nuru.languageserver.stop", async () => {
@@ -70,7 +71,7 @@ export function activate(context: ExtensionContext) {
     clientOptions
   );
 
-  launchServer()
+  handleLaunchingServer()
 }
 
 

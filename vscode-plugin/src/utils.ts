@@ -17,24 +17,30 @@ type ReleaseInfo = {
     tag_name: string
 }
 
-export function getExtentionPath(): string{
-    return path.join(Context.extensionPath,CMD)
+export function getExtentionPath(): string {
+    //check if debug enabled
+    let cmd = CMD
+    if(vscode.workspace.getConfiguration("nuru-lsp").get("debug", false)) {
+        cmd += " "+path.join(Context.extensionPath,"lsp.log")
+    }
+    cmd = path.join(Context.extensionPath, cmd)
+    vscode.window.showInformationMessage("NURU-LSP server path: " + cmd)
+    return cmd
 }
 
 export function isInstalled(): boolean {
     const extPath = Context.extensionPath
     if (readdirSync(extPath).find(f => f === CMD) == undefined) {
-        vscode.window.showInformationMessage("NURU-LSP executable not installed")
+        vscode.window.showInformationMessage("NURU-LSP server not found, downloading...")
         return false
     }
-    vscode.window.showInformationMessage("Yes NURU-LSP executable installed")
+    vscode.window.showInformationMessage("NURU-LSP server found")
     return true
 }
 
-async function showStatusBarMessage(msg: string): Promise<vscode.StatusBarItem>{
+async function showStatusBarMessage(msg: string): Promise<vscode.StatusBarItem> {
     const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
     item.text = msg
-    item.color = "green"
     item.show()
     Context.subscriptions.push(item)
     return item
@@ -56,26 +62,27 @@ export async function getLatestReleaseVersion(): Promise<number> {
 }
 
 export async function downloadOrUpdate(): Promise<boolean> {
-    //if (isInstalled()) {
-    //    try {
-    //        const currentVersion: number = await new Promise((resolve, reject) => {
-    //            exec(getPathOfCMD() + " --version", (err, stdout, stderr) => {
-    //                if (err) {
-    //                    throw err
-    //                }
-    //                resolve(parseVersionToNumber(stdout))
-    //            })
-    //        })
-    //        const releaseVer = await getLatestReleaseVersion()
-    //        if (currentVersion >= releaseVer) {
-    //            vscode.window.showInformationMessage("You are already using latest executable of nuru-lsp")
-    //            return true
-    //        }
-    //    } catch (e) {
-    //        return false
-    //    }
-    //}
+    if (isInstalled()) {
+        try {
+            const currentVersion: number = await new Promise((resolve, reject) => {
+                exec(getPathOfCMD() + " --version", (err, stdout, stderr) => {
+                    if (err) {
+                        throw err
+                    }
+                    resolve(parseVersionToNumber(stdout))
+                })
+            })
+            const releaseVer = await getLatestReleaseVersion()
+            if (currentVersion >= releaseVer) {
+                vscode.window.showInformationMessage("You are already using latest executable of nuru-lsp")
+                return true
+            }
+        } catch (e) {
+            return false
+        }
+    }
 
+    vscode.window.showInformationMessage("NURU LSP server setup complete")
     return await getAndInstallLatest()
 }
 
@@ -115,17 +122,16 @@ async function getAndInstallLatest(): Promise<boolean> {
     }))
 }
 
-export async function launchServer() {
-    if (!isInstalled()) {
-        if(!await downloadOrUpdate()){
-            vscode.window.showErrorMessage("Initial Setup failed, couldn't start LSP, please check you have internet\n"+
-                "then run-> Nuru LSP: Start again"
-            )
-            return;
-        }
+export async function handleLaunchingServer() {
+    if (!await downloadOrUpdate()) {
+        vscode.window.showErrorMessage("Initial Setup failed, couldn't start LSP, please check you have internet\n" +
+            "then run-> Nuru LSP: Start again"
+        )
+        return;
     }
-    vscode.window.showInformationMessage("Starting NURU LSP server")
-    client.start().catch((err) => {
-        vscode.window.showErrorMessage(`Nuru Lsp failed to start error: ${err}`)
-    });
+    if (!client.isRunning()) {
+        client.start().catch((err) => {
+            vscode.window.showErrorMessage(`Nuru Lsp failed to start error: ${err}`)
+        });
+    }
 }

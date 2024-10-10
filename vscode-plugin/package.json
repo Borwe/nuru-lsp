@@ -4,7 +4,7 @@
   "description": "Nuru Lsp Client",
   "author": "Brian Orwe",
   "license": "MIT",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "BrianOrwe",
   "icon": "img/nuru.png",
   "repository": {
@@ -16,10 +16,20 @@
   },
   "extensionDependencies": [],
   "activationEvents": [
-    "onLanguage:nr"
+    "*"
   ],
   "main": "./out/extension",
   "contributes": {
+    "configuration": {
+      "title": "Nuru-Lsp",
+      "properties": {
+        "nuru-lsp.debug": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug logging to logs.lsp file in workspace folder"
+        }
+      }
+    },
     "commands": [
       {
         "command": "nuru.languageserver.is-installed",
@@ -36,6 +46,10 @@
       {
         "command": "nuru.languageserver.start",
         "title": "Nuru LSP: Start"
+      },
+      {
+        "command": "nuru.languageserver.command",
+        "title": "Nuru LSP: Show command"
       }
     ],
     "languages": [
