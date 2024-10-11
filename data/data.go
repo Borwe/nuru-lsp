@@ -31,14 +31,15 @@ type ErrorMapLineNumbers = map[uint][]string
 
 // Hold information on .nr file
 type Data struct {
-	File     string
-	Version  uint64
-	Errors   ErrorMapLineNumbers
-	Content  []string
-	RootTree *ast.Node
+	File        string
+	Version     uint64
+	Errors      ErrorMapLineNumbers
+	Content     []string
+	RootTree    *ast.Node
+	WorkingTree *ast.Node
 }
 
-var Pages = make(map[string]Data)
+var Pages = map[string]Data{}
 var PagesMutext = sync.Mutex{}
 
 func ParseTree(parser *parser.Parser) (ast.Node, []string) {
@@ -92,11 +93,7 @@ func checkFileIsPackage(dir string, file fs.DirEntry) bool {
 	pakejiAsts := []*ast.Package{}
 	getAsts(*data.RootTree, &pakejiAsts)
 
-	if len(pakejiAsts) > 0 {
-		return true
-	}
-
-	return false
+	return len(pakejiAsts) > 0
 }
 
 func getAsts[T ast.Node](node ast.Node, result *[]T) {
@@ -365,7 +362,7 @@ func (d *Data) getCompletions(word *string) (*[]defines.CompletionItem, error) {
 		if val.Value != nil {
 			detail = val.String()
 		}
-		fmt.Println("NAMED:", label, "VAL", detail)
+		logs.Println("NAMED:", label, "VAL", detail)
 
 		completions = append(completions, defines.CompletionItem{
 			Kind:  &kind,
@@ -393,15 +390,14 @@ func (d *Data) getCompletions(word *string) (*[]defines.CompletionItem, error) {
 
 func combineCompletions(completions []defines.CompletionItem,
 	toAdd *[]defines.CompletionItem, filter *string) *[]defines.CompletionItem {
-	if toAdd!=nil {
+	if toAdd != nil {
 		for _, item := range *toAdd {
 			if filter == nil || *filter == "=" || item.Label == *filter {
-				logs.Println("ADDING:",item.Label)
 				completions = append(completions, item)
 			}
 		}
 	}
-	logs.Println("COMPLETION ITEMS:",completions)
+	//logs.Println("COMPLETION ITEMS:",completions)
 	return &completions
 }
 
@@ -435,7 +431,6 @@ func (d *Data) Completions(completeParams *defines.CompletionParams,
 		}
 		return combineCompletions(*completes, defaultCompletions, nil), nil
 	}
-
 
 	switch *word {
 	case "tumia":
@@ -550,12 +545,12 @@ func (d *Data) Completions(completeParams *defines.CompletionParams,
 				}
 			}
 			return &completions, nil
-		} else if word != nil && *word != "" && !(prevWord!=nil && *prevWord == "fanya") {
+		} else if word != nil && *word != "" && !(prevWord != nil && *prevWord == "fanya") {
 			completions, err := d.getCompletions(word)
-			if err!= nil {
+			if err != nil {
 				return defaultCompletions, err
 			}
-			logs.Println("PREVWORD:",*prevWord,"WORD:",*word)
+			logs.Println("PREVWORD:", *prevWord, "WORD:", *word)
 			return combineCompletions(*completions, defaultCompletions, nil), nil
 		}
 		return nil, errors.New(fmt.Sprintf("%s prev->%s word->%s", "NOT IMPLEMENTED", *prevWord, *word))
@@ -577,13 +572,15 @@ func NewData(file string, version uint64, content []string) (*Data, error, []str
 		return nil, err, errs
 	}
 
-	file = fileUrl.Path
-	if strings.HasPrefix(file, "/") && filepath.IsAbs(file[1:]) {
-		file = file[1:]
+	logs.Println("FILEOPENBEFORE:",file)
+	filePath := fileUrl.Path
+	logs.Println("FILEOPENAFTER:",file)
+	if strings.HasPrefix(filePath, "/") && filepath.IsAbs(filePath[1:]) {
+		filePath = filePath[1:]
 	}
 
 	data := Data{
-		File:     file,
+		File:     filePath,
 		Version:  version,
 		Errors:   make(ErrorMapLineNumbers, 0),
 		Content:  content,
@@ -754,6 +751,7 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 
 	file := string(req.TextDocument.Uri)
 
+
 	//if already previously opened by other methods just return here
 	if _, ok := Pages[file]; ok {
 		return nil
@@ -765,7 +763,7 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 
 	doc, err, errs := NewData(file, 0, content)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	//do diagnostics here on the file
@@ -775,7 +773,8 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 	return nil
 }
 
-func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams) error {
+func OnDataChange(ctx context.Context,
+	req *defines.DidChangeTextDocumentParams) error {
 	PagesMutext.Lock()
 	defer PagesMutext.Unlock()
 
@@ -792,7 +791,6 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 		docnew, _, errsDoc := NewData(string(req.TextDocument.Uri), uint64(req.TextDocument.Version), content)
 		errs = errsDoc
 		doc = *docnew
-
 	} else {
 		if doc.Version < uint64(req.TextDocument.Version) {
 			content := []string{}

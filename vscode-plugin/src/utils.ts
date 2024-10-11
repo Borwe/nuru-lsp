@@ -24,11 +24,9 @@ export function getExtentionPath(): CommandType {
     let args: string | undefined = undefined;
     const isDebug = vscode.workspace.getConfiguration("nuru-lsp").get<boolean>("dbg")
     if (isDebug) {
-        args = path.join(Context.extensionPath, "lsp.log")
+        args = path.join(Context.extensionPath, "lsp.log").replace(/\\/g, "/")
     }
     const cmd = getPathOfCMD()
-    vscode.window.showInformationMessage("NURU-LSP server path: " +
-        cmd + " " + args)
     return {
         cmd: cmd,
         args: args != undefined ? [args] : []
@@ -36,8 +34,8 @@ export function getExtentionPath(): CommandType {
 }
 
 export function isInstalled(): boolean {
-    const extPath = Context.extensionPath
-    if (readdirSync(extPath).find(f => f === CMD) == undefined) {
+    const extPath = getPathOfCMD()
+    if (fs.existsSync(extPath) == false) {
         vscode.window.showInformationMessage("NURU-LSP server not found, downloading...")
         return false
     }
@@ -54,7 +52,9 @@ async function showStatusBarMessage(msg: string): Promise<vscode.StatusBarItem> 
 }
 
 function parseVersionToNumber(version: string): number {
-    const numvers = version.substring(1).split(".")
+    const split = version.split(" ")
+    const versionD = split.length>1 ? split[1] : split[0]
+    const numvers = versionD.substring(1).split(".")
     let num = 0
     for (let i = numvers.length - 1, j = 1; i >= 0; i--, j *= 10) {
         num = num + parseInt(numvers[i]) * j
@@ -80,10 +80,12 @@ export async function downloadOrUpdate(): Promise<boolean> {
             })
         })
         const releaseVer = await getLatestReleaseVersion()
+        vscode.window.showInformationMessage(`VERSIONS CURRENT: ${currentVersion} ONLINE: ${releaseVer}`)
         if (currentVersion >= releaseVer) {
             vscode.window.showInformationMessage("You are already using latest executable of nuru-lsp")
             return true
         }
+        return true
     }
 
     return await getAndInstallLatest()
@@ -144,4 +146,14 @@ export async function handleLaunchingServer() {
             vscode.window.showErrorMessage(`Nuru Lsp failed to start error: ${err}`)
         });
     }
+}
+
+export async function openLogFileIfDebug(){
+    if (vscode.workspace.getConfiguration("nuru-lsp").get<boolean>("dbg")) {
+        const logFile = vscode.Uri.file(getExtentionPath().args[0])
+        const doc = await vscode.workspace.openTextDocument(logFile)
+        vscode.window.showTextDocument(doc, { preview: false })
+        return
+    }
+    vscode.window.showInformationMessage("Didn't enable debug mode in Nuru-lsp, not opening log file")
 }

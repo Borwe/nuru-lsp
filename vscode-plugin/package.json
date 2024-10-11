@@ -12,7 +12,7 @@
     "url": "https://github.com/Borwe/nuru-lsp"
   },
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.94.0"
   },
   "extensionDependencies": [],
   "activationEvents": [
@@ -40,6 +40,10 @@
       {
         "command": "nuru.languageserver.is-installed",
         "title": "Nuru LSP: Is installed"
+      },
+      {
+        "command": "nuru.languageserver.open-log-file",
+        "title": "Nuru LSP: Open server log file"
       },
       {
         "command": "nuru.languageserver.restart",
@@ -79,10 +83,10 @@
     "pretest": "npm run compile",
     "test": "vscode-test",
     "otest": "npm run compile && vscode-test -i -f 'online'",
-    "package": "vsce package"
+    "package": "vsce package --allow-star-activation"
   },
   "dependencies": {
-    "vscode-languageclient": "^8.1.0"
+    "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.5",

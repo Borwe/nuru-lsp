@@ -86,9 +86,10 @@ func CompletionFunc(ctx context.Context,
 	data.PagesMutext.Lock()
 	defer data.PagesMutext.Unlock()
 
+	logs.Println("FILE IS:",file, "DOCS LENGTH:",len(data.Pages))
 	doc, found := data.Pages[file]
 
-	if found == false {
+	if !found {
 		//This should technically never run, as all docs must exist
 		return nil, errors.New("DOC NOT FOUND")
 	}

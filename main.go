@@ -13,13 +13,13 @@ import (
 	"github.com/Borwe/go-lsp/lsp/defines"
 )
 
-const Version = "0.0.07"
+const Version = "0.0.08"
 
 func main() {
 
 	if len(os.Args) >= 2 {
 		if os.Args[1] == "--version" {
-			fmt.Println("VERSION:", Version)
+			fmt.Printf("VERSION: v%s\n", Version)
 			return
 		}
 	}
@@ -46,12 +46,20 @@ func main() {
 	})
 	server.Server.OnDidChangeWatchedFiles(func(ctx context.Context,
 		req *defines.DidChangeWatchedFilesParams) (err error) {
-			return nil
+		return nil
 	})
 	server.Server.OnDidOpenTextDocument(data.OnDocOpen)
 	server.Server.OnDidCloseTextDocument(data.OnDidClose)
 	server.Server.OnDidChangeTextDocument(data.OnDataChange)
 	server.Server.OnCompletion(completions.CompletionFunc)
+	server.Server.OnExit(func(ctx context.Context, req *interface{}) (err error) {
+		logs.Println("EXIT VARIABLE:",req)
+		return nil
+	})
+	server.Server.OnShutdown(func(ctx context.Context, req *interface{}) (err error) {
+		logs.Println("SHUTDOWN VARIABLE:",req)
+		return nil
+	})
 
 	server.Server.Run()
 }

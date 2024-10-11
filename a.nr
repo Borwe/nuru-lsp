@@ -12,10 +12,12 @@ fanya ujinga = unda(){
 	andika("Wacha ujinga")
 }
 
-fanya w = unda(){
+w = unda(){
 	andika("X gone give to you")
 }
 
 fanya x = "WE GON GIVE To YAAH"
 
-andika(x)
+fanya sura = unda(){
+	
+}

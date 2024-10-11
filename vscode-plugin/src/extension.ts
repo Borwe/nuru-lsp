@@ -8,7 +8,7 @@ import {
   ServerOptions,
   TransportKind,
 } from "vscode-languageclient/node";
-import { downloadOrUpdate, getExtentionPath, isInstalled, handleLaunchingServer, VERSION } from "./utils";
+import { downloadOrUpdate, getExtentionPath, isInstalled, handleLaunchingServer, VERSION, openLogFileIfDebug } from "./utils";
 
 export let Context: ExtensionContext
 
@@ -20,6 +20,8 @@ export function activate(context: ExtensionContext) {
   const command = getExtentionPath()
   //register commands
   commands.registerCommand("nuru.languageserver.is-installed", isInstalled);
+  commands.registerCommand("nuru.languageserver.open-log-file",
+    openLogFileIfDebug);
   commands.registerCommand("nuru.languageserver.download", downloadOrUpdate);
   commands.registerCommand("nuru.languageserver.command", getExtentionPath)
   commands.registerCommand("nuru.languageserver.is-running", () => {
@@ -59,7 +61,7 @@ export function activate(context: ExtensionContext) {
     documentSelector: [{ language: "nr", scheme: "file" }],
     synchronize: {
       // Notify the server about file changes to '.clientrc files contained in the workspace
-      fileEvents: workspace.createFileSystemWatcher("**/*.{nr,sr}"),
+      fileEvents: workspace.createFileSystemWatcher("**/*.{nr,sw}"),
     },
   };
 
