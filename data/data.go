@@ -518,9 +518,9 @@ func (d *Data) Completions(completeParams *defines.CompletionParams,
 				}
 			}
 			dir := path.Dir(d.File)
-			for file, page := range Pages {
-				fileDir := path.Dir(file)
-				name := filepath.Base(file)
+			for _, page := range Pages {
+				fileDir := path.Dir(page.File)
+				name := filepath.Base(page.File)
 				name = name[0 : len(name)-3]
 				if fileDir == dir && strings.Contains(name, *word) {
 					checks := []*ast.Package{}
@@ -574,11 +574,11 @@ func NewData(file string, version uint64, content []string) (*Data, error, []str
 
 	logs.Println("FILEOPENBEFORE:",file)
 	filePath := fileUrl.Path
-	logs.Println("FILEOPENAFTER:",file)
 	if strings.HasPrefix(filePath, "/") && filepath.IsAbs(filePath[1:]) {
 		filePath = filePath[1:]
 	}
 
+	logs.Println("FILEOPENAFTER:",filePath)
 	data := Data{
 		File:     filePath,
 		Version:  version,
