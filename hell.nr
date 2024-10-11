@@ -5,6 +5,12 @@ zed = unda(){
     zed()
 }
 
+chura = zed()
+duka = zuba()
+
 fanya zuba = unda(){
     andika("YOLO")
 }
+
+andika( chura )
+andika( duka )

@@ -10,6 +10,7 @@ NOTE: Available on vscode package manager for instalation
 - Error notifications
 - Completion for key words
 - Completion for `tumia` based on default exported and current `pakeji` in file
+- Completition of variables, and functions created in file
 
 ## Usage
 - You can get this plugin file for manual installation on the release section.
