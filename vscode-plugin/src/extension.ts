@@ -8,7 +8,7 @@ import {
   ServerOptions,
   TransportKind,
 } from "vscode-languageclient/node";
-import { downloadOrUpdate, getExtentionPath, isInstalled, launchServer, VERSION } from "./utils";
+import { downloadOrUpdate, getExtentionPath, isInstalled, handleLaunchingServer, VERSION, openLogFileIfDebug } from "./utils";
 
 export let Context: ExtensionContext
 
@@ -20,7 +20,10 @@ export function activate(context: ExtensionContext) {
   const command = getExtentionPath()
   //register commands
   commands.registerCommand("nuru.languageserver.is-installed", isInstalled);
+  commands.registerCommand("nuru.languageserver.open-log-file",
+    openLogFileIfDebug);
   commands.registerCommand("nuru.languageserver.download", downloadOrUpdate);
+  commands.registerCommand("nuru.languageserver.command", getExtentionPath)
   commands.registerCommand("nuru.languageserver.is-running", () => {
     if (client && client.isRunning()) {
       return true
@@ -31,12 +34,12 @@ export function activate(context: ExtensionContext) {
     if (client.isRunning()) {
       await client.stop()
     }
-    launchServer()
+    handleLaunchingServer()
     window.showInformationMessage("Nuru LSP restarted")
   });
   commands.registerCommand("nuru.languageserver.start", async () => {
     if (!client.isRunning()) {
-      launchServer()
+      handleLaunchingServer()
     }
   });
   commands.registerCommand("nuru.languageserver.stop", async () => {
@@ -48,17 +51,17 @@ export function activate(context: ExtensionContext) {
 
 
   const serverOptions: ServerOptions = {
-    run: { command: command, transport: TransportKind.stdio },
-    debug: { command: command, transport: TransportKind.stdio },
+    run: { command: command.cmd, args: command.args, transport: TransportKind.stdio },
+    debug: { command: command.cmd, args: command.args, transport: TransportKind.stdio },
   };
 
   // Options to control the language client
   const clientOptions: LanguageClientOptions = {
     // Register the server for all documents by default
-    documentSelector: [{ language: "nr", scheme:"file" }],
+    documentSelector: [{ language: "nr", scheme: "file" }],
     synchronize: {
       // Notify the server about file changes to '.clientrc files contained in the workspace
-      fileEvents: workspace.createFileSystemWatcher("**/*.{nr,sr}"),
+      fileEvents: workspace.createFileSystemWatcher("**/*.{nr,sw}"),
     },
   };
 
@@ -70,7 +73,7 @@ export function activate(context: ExtensionContext) {
     clientOptions
   );
 
-  launchServer()
+  handleLaunchingServer()
 }
 
 

@@ -19,6 +19,7 @@ import (
 	"github.com/Borwe/go-lsp/lsp/defines"
 	"github.com/NuruProgramming/Nuru/ast"
 	"github.com/NuruProgramming/Nuru/lexer"
+	"github.com/NuruProgramming/Nuru/module"
 	"github.com/NuruProgramming/Nuru/parser"
 )
 
@@ -30,14 +31,15 @@ type ErrorMapLineNumbers = map[uint][]string
 
 // Hold information on .nr file
 type Data struct {
-	File     string
-	Version  uint64
-	Errors   ErrorMapLineNumbers
-	Content  []string
-	RootTree *ast.Node
+	File        string
+	Version     uint64
+	Errors      ErrorMapLineNumbers
+	Content     []string
+	RootTree    *ast.Node
+	WorkingTree *ast.Node
 }
 
-var Pages = make(map[string]Data)
+var Pages = map[string]Data{}
 var PagesMutext = sync.Mutex{}
 
 func ParseTree(parser *parser.Parser) (ast.Node, []string) {
@@ -88,63 +90,68 @@ func checkFileIsPackage(dir string, file fs.DirEntry) bool {
 		Pages[fpath] = *tmp
 		data = Pages[fpath]
 	}
-	pakejiAsts := &[]*ast.Package{}
+	pakejiAsts := []*ast.Package{}
 	getAsts(*data.RootTree, &pakejiAsts)
 
-	if len(*pakejiAsts) > 0 {
-		return true
-	}
-
-	return false
+	return len(pakejiAsts) > 0
 }
 
-func getAsts[T ast.Node](node ast.Node, result **[]T) {
+func getAsts[T ast.Node](node ast.Node, result *[]T) {
 	switch node := node.(type) {
 	case T:
-		tmp := append(**result, node)
-		*result = &tmp
+		tmp := append(*result, node)
+		*result = tmp
+		logs.Println("YOOOOOOOOOOOOOOOOOOOOOOOO")
 		break
 	case *ast.Program:
+		logs.Println("Pogram")
 		for _, stmt := range node.Statements {
 			getAsts(stmt, result)
 		}
 		break
-
 	case *ast.ExpressionStatement:
+		logs.Println("ExpressionStatement")
 		getAsts(node.Expression, result)
 		break
 	case *ast.IntegerLiteral:
 	case *ast.FloatLiteral:
 	case *ast.Boolean:
+		logs.Println("Literal")
 		break
 	case *ast.PrefixExpression:
+		logs.Println("PrefixExpression")
 		getAsts(node.Right, result)
 		break
 	case *ast.InfixExpression:
+		logs.Println("InfixExpression")
 		getAsts(node.Left, result)
 		getAsts(node.Right, result)
 		break
 	case *ast.PostfixExpression:
+		logs.Println("PostfixExpression")
 		break
 	case *ast.BlockStatement:
+		logs.Println("BlockStatement")
 		for _, stmt := range node.Statements {
 			getAsts(stmt, result)
 		}
 		break
 	case *ast.IfExpression:
+		logs.Println("IfExpression")
 		getAsts(node.Condition, result)
 		getAsts(node.Alternative, result)
 		getAsts(node.Consequence, result)
 		break
 	case *ast.ReturnStatement:
+		logs.Println("ReturnStatement")
 		getAsts(node.ReturnValue, result)
 		break
 	case *ast.LetStatement:
+		logs.Println("LetStatement")
 		getAsts(node.Value, result)
 		break
-	case *ast.Identifier:
-		break
 	case *ast.FunctionLiteral:
+		logs.Println("FunctionLiteral")
 		getAsts(node.Body, result)
 		for _, stmt := range node.Parameters {
 			getAsts(stmt, result)
@@ -153,7 +160,33 @@ func getAsts[T ast.Node](node ast.Node, result **[]T) {
 			getAsts(stmt, result)
 		}
 		break
+	case *ast.PropertyExpression:
+		logs.Println("PropertyExpression")
+		getAsts(node.Object, result)
+		getAsts(node.Property, result)
+		break
+	case *ast.PropertyAssignment:
+		logs.Println("PropertyAssignment")
+		getAsts(node.Name, result)
+		getAsts(node.Value, result)
+		break
+	case *ast.Assign:
+		logs.Println("Assign")
+		getAsts(node.Name, result)
+		getAsts(node.Value, result)
+		break
+	case *ast.AssignEqual:
+		logs.Println("AssignEqual")
+		getAsts(node.Left, result)
+		getAsts(node.Value, result)
+		break
+	case *ast.AssignmentExpression:
+		logs.Println("AssignmentExpression")
+		getAsts(node.Left, result)
+		getAsts(node.Value, result)
+		break
 	case *ast.MethodExpression:
+		logs.Println("MethodExpression")
 		getAsts(node.Object, result)
 		getAsts(node.Method, result)
 		for _, stmt := range node.Defaults {
@@ -164,77 +197,77 @@ func getAsts[T ast.Node](node ast.Node, result **[]T) {
 		}
 		break
 	case *ast.Import:
+		logs.Println("Import")
 		for _, stmt := range node.Identifiers {
-			getAsts(stmt, result)
+			if _, ok := module.Mapper[stmt.Value]; ok {
+				continue
+			}
+			var nd ast.Node = stmt
+			getAsts(nd, result)
 		}
 		break
 	case *ast.CallExpression:
+		logs.Println("CallExpression")
 		getAsts(node.Function, result)
 		for _, stmt := range node.Arguments {
 			getAsts(stmt, result)
 		}
 		break
 	case *ast.StringLiteral:
+		logs.Println("StringLiteral")
 		break
 	case *ast.At:
+		logs.Println("At")
 		break
 	case *ast.ArrayLiteral:
+		logs.Println("ArrayLiteral")
 		for _, stmt := range node.Elements {
 			getAsts(stmt, result)
 		}
 		break
 	case *ast.IndexExpression:
+		logs.Println("IndexExpression")
 		getAsts(node.Left, result)
 		getAsts(node.Index, result)
 		break
 	case *ast.DictLiteral:
+		logs.Println("DictLiteral")
 		for stmt1, stmt2 := range node.Pairs {
 			getAsts(stmt1, result)
 			getAsts(stmt2, result)
 		}
 		break
 	case *ast.WhileExpression:
+		logs.Println("WhileExpression")
 		getAsts(node.Condition, result)
 		getAsts(node.Consequence, result)
 		break
 	case *ast.Break:
 	case *ast.Continue:
+		logs.Println("BreakOrContinue")
 		break
 	case *ast.SwitchExpression:
+		logs.Println("SwitchExpression")
 		getAsts(node.Value, result)
 		for _, stmt := range node.Choices {
 			getAsts(stmt, result)
 		}
 		break
 	case *ast.Null:
+		logs.Println("Null")
 		break
 	case *ast.ForIn:
+		logs.Println("ForIn")
 		getAsts(node.Iterable, result)
 		getAsts(node.Block, result)
 		break
 	case *ast.Package:
+		logs.Println("Package")
 		getAsts(node.Name, result)
 		getAsts(node.Block, result)
 		break
-	case *ast.PropertyExpression:
-		getAsts(node.Object, result)
-		getAsts(node.Property, result)
-		break
-	case *ast.PropertyAssignment:
-		getAsts(node.Name, result)
-		getAsts(node.Value, result)
-		break
-	case *ast.Assign:
-		getAsts(node.Name, result)
-		getAsts(node.Value, result)
-		break
-	case *ast.AssignEqual:
-		getAsts(node.Left, result)
-		getAsts(node.Value, result)
-		break
-	case *ast.AssignmentExpression:
-		getAsts(node.Left, result)
-		getAsts(node.Value, result)
+	case *ast.Identifier:
+		logs.Println("Identifier")
 		break
 	}
 }
@@ -267,11 +300,112 @@ func getNuruFilesInDir(dir string) []fs.DirEntry {
 	return result
 }
 
-func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines.CompletionItem, error) {
+func getTumiaIdentifiers(node *ast.Node) []*ast.Identifier {
+	tumiaIdentifiers := []*ast.Identifier{}
+	tumiaLists := []*ast.Import{}
+	getAsts(*node, &tumiaLists)
+	for _, tumias := range tumiaLists {
+		getAsts(tumias, &tumiaIdentifiers)
+	}
+	return tumiaIdentifiers
+}
+
+func (d *Data) getCompletions(word *string) (*[]defines.CompletionItem, error) {
+	completions := []defines.CompletionItem{}
+	//get all the tumias
+	tumiaIdentifiers := getTumiaIdentifiers(d.RootTree)
+	for _, val := range tumiaIdentifiers {
+		kind := defines.CompletionItemKindFile
+		label := val.String()
+		detail := "Ni pakeji"
+		logs.Println("TUMIAS NAMED:", label, "VAL", detail)
+
+		completions = append(completions, defines.CompletionItem{
+			Kind:  &kind,
+			Label: label,
+			LabelDetails: &defines.CompletionItemLabelDetails{
+				Detail: &detail,
+			},
+		})
+	}
+
+	//get all Identifiers in current file
+	letEquals := []*ast.LetStatement{}
+	getAsts(*d.RootTree, &letEquals)
+	assignmentEquals := []*ast.Assign{}
+	getAsts(*d.RootTree, &assignmentEquals)
+
+	//get variables
+	for _, val := range letEquals {
+
+		funcKind := defines.CompletionItemKindFunction
+		label := val.Name.String()
+		detail := ""
+		if val.Value != nil {
+			detail = val.String()
+		}
+		logs.Println("NAMED:", label, "VAL", detail)
+
+		completions = append(completions, defines.CompletionItem{
+			Kind:  &funcKind,
+			Label: label,
+			LabelDetails: &defines.CompletionItemLabelDetails{
+				Detail: &detail,
+			},
+		})
+	}
+	for _, val := range assignmentEquals {
+
+		kind := defines.CompletionItemKindField
+		label := val.Name.String()
+		detail := ""
+		if val.Value != nil {
+			detail = val.String()
+		}
+		logs.Println("NAMED:", label, "VAL", detail)
+
+		completions = append(completions, defines.CompletionItem{
+			Kind:  &kind,
+			Label: label,
+			LabelDetails: &defines.CompletionItemLabelDetails{
+				Detail: &detail,
+			},
+		})
+	}
+
+	if word != nil && *word == "" {
+		return nil, errors.New(fmt.Sprint("Passed an empy string for completions:", *word, "As word"))
+	} else if word == nil {
+		return &completions, nil
+	}
+
+	finalCompletion := []defines.CompletionItem{}
+	for _, completion := range completions {
+		if strings.Contains(completion.Label, *word) {
+			finalCompletion = append(finalCompletion, completion)
+		}
+	}
+	return &finalCompletion, nil
+}
+
+func combineCompletions(completions []defines.CompletionItem,
+	toAdd *[]defines.CompletionItem, filter *string) *[]defines.CompletionItem {
+	if toAdd != nil {
+		for _, item := range *toAdd {
+			if filter == nil || *filter == "=" || item.Label == *filter {
+				completions = append(completions, item)
+			}
+		}
+	}
+	//logs.Println("COMPLETION ITEMS:",completions)
+	return &completions
+}
+
+func (d *Data) Completions(completeParams *defines.CompletionParams,
+	defaultCompletions *[]defines.CompletionItem) (*[]defines.CompletionItem, error) {
 	//get current word, otherwise get previous
 	var word *string = nil
 	var prevWord *string = nil
-
 	for no, line := range d.Content {
 		if no != int(completeParams.Position.Line) {
 			continue
@@ -288,14 +422,20 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 		}
 	}
 
-	if word == nil {
-		return nil, errors.New("NOT IMPLEMENTED BASIC COMPLETION")
+	//meaning we have no input from user to go by
+	//so just get all idenfitiers available
+	if (prevWord == nil && word == nil) || (*prevWord == "" && *word == "") {
+		completes, err := d.getCompletions(nil)
+		if err != nil {
+			return defaultCompletions, nil
+		}
+		return combineCompletions(*completes, defaultCompletions, nil), nil
 	}
 
 	switch *word {
 	case "tumia":
 		//get all files in directory of current data
-		logs.Println("FILE COMPLETING:", d.File)
+		logs.Println("TUMIA FILE COMPLETING:", d.File)
 		packajiFiles := []string{}
 		dir := path.Dir(d.File)
 		files := getNuruFilesInDir(dir)
@@ -326,9 +466,9 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 		for file, page := range Pages {
 			fileDir := path.Dir(file)
 			if fileDir == dir {
-				checks := &[]*ast.Package{}
+				checks := []*ast.Package{}
 				getAsts(*page.RootTree, &checks)
-				if len(*checks) > 0 {
+				if len(checks) > 0 {
 					name := filepath.Base(file)
 					name = name[0 : len(name)-3]
 					same := false
@@ -378,14 +518,14 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 				}
 			}
 			dir := path.Dir(d.File)
-			for file, page := range Pages {
-				fileDir := path.Dir(file)
-				name := filepath.Base(file)
+			for _, page := range Pages {
+				fileDir := path.Dir(page.File)
+				name := filepath.Base(page.File)
 				name = name[0 : len(name)-3]
 				if fileDir == dir && strings.Contains(name, *word) {
-					checks := &[]*ast.Package{}
+					checks := []*ast.Package{}
 					getAsts(*page.RootTree, &checks)
-					if len(*checks) > 0 {
+					if len(checks) > 0 {
 						same := false
 						for _, completion := range completions {
 							if completion.Label == name {
@@ -405,10 +545,16 @@ func (d *Data) Completions(completeParams *defines.CompletionParams) (*[]defines
 				}
 			}
 			return &completions, nil
+		} else if word != nil && *word != "" && !(prevWord != nil && *prevWord == "fanya") {
+			completions, err := d.getCompletions(word)
+			if err != nil {
+				return defaultCompletions, err
+			}
+			logs.Println("PREVWORD:", *prevWord, "WORD:", *word)
+			return combineCompletions(*completions, defaultCompletions, nil), nil
 		}
-		return nil, errors.New("NOT IMPLEMENTED")
+		return nil, errors.New(fmt.Sprintf("%s prev->%s word->%s", "NOT IMPLEMENTED", *prevWord, *word))
 	}
-
 }
 
 func (d *Data) getAllVariablesAndFunctions() *[]defines.CompletionItem {
@@ -417,7 +563,7 @@ func (d *Data) getAllVariablesAndFunctions() *[]defines.CompletionItem {
 }
 
 func NewData(file string, version uint64, content []string) (*Data, error, []string) {
-	lexer := lexer.New(strings.Join(content, ""))
+	lexer := lexer.New(strings.Join(content, "\n"))
 	parser := parser.New(lexer)
 	root, errs := ParseTree(parser)
 
@@ -426,13 +572,15 @@ func NewData(file string, version uint64, content []string) (*Data, error, []str
 		return nil, err, errs
 	}
 
-	file = fileUrl.Path
-	if strings.HasPrefix(file, "/") && filepath.IsAbs(file[1:]) {
-		file = file[1:]
+	logs.Println("FILEOPENBEFORE:",file)
+	filePath := fileUrl.Path
+	if strings.HasPrefix(filePath, "/") && filepath.IsAbs(filePath[1:]) {
+		filePath = filePath[1:]
 	}
 
+	logs.Println("FILEOPENAFTER:",filePath)
 	data := Data{
-		File:     file,
+		File:     filePath,
 		Version:  version,
 		Errors:   make(ErrorMapLineNumbers, 0),
 		Content:  content,
@@ -603,6 +751,7 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 
 	file := string(req.TextDocument.Uri)
 
+
 	//if already previously opened by other methods just return here
 	if _, ok := Pages[file]; ok {
 		return nil
@@ -614,7 +763,7 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 
 	doc, err, errs := NewData(file, 0, content)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	//do diagnostics here on the file
@@ -624,7 +773,8 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 	return nil
 }
 
-func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams) error {
+func OnDataChange(ctx context.Context,
+	req *defines.DidChangeTextDocumentParams) error {
 	PagesMutext.Lock()
 	defer PagesMutext.Unlock()
 
@@ -641,7 +791,6 @@ func OnDataChange(ctx context.Context, req *defines.DidChangeTextDocumentParams)
 		docnew, _, errsDoc := NewData(string(req.TextDocument.Uri), uint64(req.TextDocument.Version), content)
 		errs = errsDoc
 		doc = *docnew
-
 	} else {
 		if doc.Version < uint64(req.TextDocument.Version) {
 			content := []string{}

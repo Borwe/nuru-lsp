@@ -4,7 +4,7 @@
   "description": "Nuru Lsp Client",
   "author": "Brian Orwe",
   "license": "MIT",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "BrianOrwe",
   "icon": "img/nuru.png",
   "repository": {
@@ -12,18 +12,38 @@
     "url": "https://github.com/Borwe/nuru-lsp"
   },
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.94.0"
   },
   "extensionDependencies": [],
   "activationEvents": [
-    "onLanguage:nr"
+    "*"
   ],
   "main": "./out/extension",
   "contributes": {
+    "configuration": {
+      "title": "Nuru-Lsp",
+      "type": "object",
+      "properties": {
+        "nuru-lsp.dbg": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug logging to logs.lsp file in workspace folder.\nRestart Vscode after changing this"
+        },
+        "nuru-lsp.execPath": {
+          "type": "string",
+          "default": "",
+          "description": "Location where to search for custom Nuru LSP executable, leave empty to let plugin get the latest version available which is the default\nRestart Vscode after changing this."
+        }
+      }
+    },
     "commands": [
       {
         "command": "nuru.languageserver.is-installed",
         "title": "Nuru LSP: Is installed"
+      },
+      {
+        "command": "nuru.languageserver.open-log-file",
+        "title": "Nuru LSP: Open server log file"
       },
       {
         "command": "nuru.languageserver.restart",
@@ -36,6 +56,10 @@
       {
         "command": "nuru.languageserver.start",
         "title": "Nuru LSP: Start"
+      },
+      {
+        "command": "nuru.languageserver.command",
+        "title": "Nuru LSP: Show command"
       }
     ],
     "languages": [
@@ -59,13 +83,12 @@
     "pretest": "npm run compile",
     "test": "vscode-test",
     "otest": "npm run compile && vscode-test -i -f 'online'",
-    "package": "vsce package"
+    "package": "vsce package --allow-star-activation"
   },
   "dependencies": {
-    "vscode-languageclient": "^8.1.0"
+    "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
-    "vsce": "^2.15.0",
     "@types/adm-zip": "^0.5.5",
     "@types/mocha": "^10.0.8",
     "@types/node": "^20.5.7",
@@ -76,6 +99,7 @@
     "mocha": "^10.7.3",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.2",
+    "vsce": "^2.15.0",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   }
