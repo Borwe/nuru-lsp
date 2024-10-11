@@ -9,7 +9,7 @@ import { pipeline } from "stream";
 import { promisify } from "util";
 
 export const CMD: string = os.platform() == "win32" ? "nuru-lsp.exe" : "nuru-lsp"
-export const VERSION = "0.0.07"
+export const VERSION = "0.0.08"
 const OSTYPE = os.platform() === "win32" ? "windows" : os.platform() === "linux" ? "ubuntu" : os.platform() === "darwin" ? "macos" : "noooo"
 const LINK_BASE = `https://github.com/Borwe/nuru-lsp/releases/download/v${VERSION}/nuru-lsp-${OSTYPE}-latest.zip`
 

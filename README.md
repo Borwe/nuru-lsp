@@ -1,4 +1,4 @@
-# :construction: UNOFFICIAL [NURU](https://nuruprogramming.org/) LSP SERVER :construction:
+# :construction: [NURU](https://nuruprogramming.org/) LSP SERVER :construction:
 
 ## Still under development :smile:
 

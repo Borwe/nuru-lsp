@@ -14,3 +14,9 @@ fanya zuba = unda(){
 
 andika( chura )
 andika( duka )
+
+angukanayo = unda(){
+    duka()
+}
+
+angukanayo()
