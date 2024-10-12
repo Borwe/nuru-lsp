@@ -100,8 +100,9 @@ export async function downloadOrUpdate(): Promise<boolean> {
             if (currentVersion >= releaseVer) {
                 vscode.window.showInformationMessage("You are already using latest executable of nuru-lsp")
                 return true
+            }else{
+                vscode.window.showInformationMessage("Newer version of NURU-LSP server found, updating")
             }
-            return true
         }
 
         return await getAndInstallLatest()
