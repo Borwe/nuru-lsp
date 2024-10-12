@@ -23,8 +23,12 @@ import (
 	"github.com/NuruProgramming/Nuru/parser"
 )
 
-var TUMIAS []string = []string{
-	"os", "muda", "mtandao", "jsoni", "hisabati",
+var TUMIAS []string = []string{}
+
+func init(){
+	for tumia := range module.Mapper {
+		TUMIAS = append(TUMIAS, tumia)
+	}
 }
 
 type ErrorMapLineNumbers = map[uint][]string
