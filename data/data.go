@@ -23,12 +23,8 @@ import (
 	"github.com/NuruProgramming/Nuru/parser"
 )
 
-var TUMIAS []string = []string{}
-
-func init(){
-	for tumia := range module.Mapper {
-		TUMIAS = append(TUMIAS, tumia)
-	}
+var TUMIAS []string = []string{
+	"os", "muda", "mtandao", "jsoni", "hisabati",
 }
 
 type ErrorMapLineNumbers = map[uint][]string
@@ -101,6 +97,9 @@ func checkFileIsPackage(dir string, file fs.DirEntry) bool {
 }
 
 func getAsts[T ast.Node](node ast.Node, result *[]T) {
+	if(node == nil){
+		return
+	}
 	switch node := node.(type) {
 	case T:
 		tmp := append(*result, node)
@@ -468,8 +467,8 @@ func (d *Data) Completions(completeParams *defines.CompletionParams,
 			})
 		}
 		for file, page := range Pages {
-			fileDir := path.Dir(file)
-			if fileDir == dir {
+			fileDir := path.Dir(page.File)
+			if fileDir == dir && file != string(completeParams.TextDocument.Uri){
 				checks := []*ast.Package{}
 				getAsts(*page.RootTree, &checks)
 				if len(checks) > 0 {
