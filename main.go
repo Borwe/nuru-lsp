@@ -13,7 +13,7 @@ import (
 	"github.com/Borwe/go-lsp/lsp/defines"
 )
 
-const Version = "0.0.08"
+const Version = "0.0.09"
 
 func main() {
 

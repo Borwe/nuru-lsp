@@ -1,5 +1,3 @@
-import { exec, ExecException } from "child_process";
-import * as os from "os";
 import { workspace, ExtensionContext, window, commands } from "vscode";
 
 import {
@@ -8,7 +6,7 @@ import {
   ServerOptions,
   TransportKind,
 } from "vscode-languageclient/node";
-import { downloadOrUpdate, getExtentionPath, isInstalled, handleLaunchingServer, VERSION, openLogFileIfDebug } from "./utils";
+import { downloadOrUpdate, getExtentionPath, isInstalled, handleLaunchingServer, openLogFileIfDebug } from "./utils";
 
 export let Context: ExtensionContext
 
@@ -58,7 +56,7 @@ export function activate(context: ExtensionContext) {
   // Options to control the language client
   const clientOptions: LanguageClientOptions = {
     // Register the server for all documents by default
-    documentSelector: [{ language: "nr", scheme: "file" }],
+    documentSelector: [{ language: "nuru", scheme: "file" }],
     synchronize: {
       // Notify the server about file changes to '.clientrc files contained in the workspace
       fileEvents: workspace.createFileSystemWatcher("**/*.{nr,sw}"),

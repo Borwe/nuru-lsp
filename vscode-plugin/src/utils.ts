@@ -1,4 +1,3 @@
-import { readdirSync } from "fs";
 import * as vscode from "vscode";
 import * as os from "os"
 import * as fs from "fs"
@@ -8,10 +7,27 @@ import path = require("path");
 import { pipeline } from "stream";
 import { promisify } from "util";
 
+const GIT_API_URL = "https://api.github.com/repos/borwe/nuru-lsp/releases/latest"
 export const CMD: string = os.platform() == "win32" ? "nuru-lsp.exe" : "nuru-lsp"
-export const VERSION = "0.0.08"
 const OSTYPE = os.platform() === "win32" ? "windows" : os.platform() === "linux" ? "ubuntu" : os.platform() === "darwin" ? "macos" : "noooo"
-const LINK_BASE = `https://github.com/Borwe/nuru-lsp/releases/download/v${VERSION}/nuru-lsp-${OSTYPE}-latest.zip`
+
+async function getLatestReleaserVersionString(): Promise<ReleaseInfo> {
+    try {
+        const res = await fetch(GIT_API_URL)
+        if (!res.ok) {
+            throw "Nuru LSP: Internet not reachable"
+        }
+        const info: ReleaseInfo = JSON.parse(await res.text())
+        return info
+    } catch (err) {
+        throw "Nuru LSP: Internet not reachable"
+    }
+}
+
+async function getLatestLinkBase(): Promise<string> {
+    const info = await getLatestReleaserVersionString()
+    return `https://github.com/Borwe/nuru-lsp/releases/download/${info.tag_name}/nuru-lsp-${OSTYPE}-latest.zip`
+}
 
 type ReleaseInfo = {
     tag_name: string
@@ -53,7 +69,7 @@ async function showStatusBarMessage(msg: string): Promise<vscode.StatusBarItem> 
 
 function parseVersionToNumber(version: string): number {
     const split = version.split(" ")
-    const versionD = split.length>1 ? split[1] : split[0]
+    const versionD = split.length > 1 ? split[1] : split[0]
     const numvers = versionD.substring(1).split(".")
     let num = 0
     for (let i = numvers.length - 1, j = 1; i >= 0; i--, j *= 10) {
@@ -63,32 +79,35 @@ function parseVersionToNumber(version: string): number {
 }
 
 export async function getLatestReleaseVersion(): Promise<number> {
-    const res = await fetch("https://api.github.com/repos/borwe/nuru-lsp/releases/latest")
-    const releaseObj: ReleaseInfo = JSON.parse(await res.text())
+    const releaseObj: ReleaseInfo = await getLatestReleaserVersionString()
     return parseVersionToNumber(releaseObj.tag_name)
 }
 
 export async function downloadOrUpdate(): Promise<boolean> {
-    if (isInstalled()) {
-        const currentVersion: number = await new Promise((resolve, reject) => {
-            exec(getPathOfCMD() + " --version", (err, stdout, stderr) => {
-                if (err) {
-                    vscode.window.showInformationMessage("FAILED Getting version info:" + err)
-                    return 0
-                }
-                resolve(parseVersionToNumber(stdout))
+    try {
+        if (isInstalled()) {
+            const currentVersion: number = await new Promise((resolve, reject) => {
+                exec(getPathOfCMD() + " --version", (err, stdout, stderr) => {
+                    if (err) {
+                        vscode.window.showInformationMessage("FAILED Getting version info:" + err)
+                        return 0
+                    }
+                    resolve(parseVersionToNumber(stdout))
+                })
             })
-        })
-        const releaseVer = await getLatestReleaseVersion()
-        vscode.window.showInformationMessage(`VERSIONS CURRENT: ${currentVersion} ONLINE: ${releaseVer}`)
-        if (currentVersion >= releaseVer) {
-            vscode.window.showInformationMessage("You are already using latest executable of nuru-lsp")
+            const releaseVer = await getLatestReleaseVersion()
+            vscode.window.showInformationMessage(`VERSIONS CURRENT: ${currentVersion} ONLINE: ${releaseVer}`)
+            if (currentVersion >= releaseVer) {
+                vscode.window.showInformationMessage("You are already using latest executable of nuru-lsp")
+                return true
+            }
             return true
         }
-        return true
-    }
 
-    return await getAndInstallLatest()
+        return await getAndInstallLatest()
+    } catch (err) {
+        vscode.window.showErrorMessage("Error: " + err)
+    }
 }
 
 function getPathOfCMD(): string {
@@ -101,6 +120,7 @@ function getPathOfCMD(): string {
 
 async function getAndInstallLatest(): Promise<boolean> {
     const downloadStatus = await showStatusBarMessage("Downloading nuru-lsp")
+    const LINK_BASE = await getLatestLinkBase()
     const resp = await fetch(LINK_BASE)
     if (!resp.ok) {
         vscode.window.showErrorMessage("Failed to download zip file from: " + LINK_BASE)
@@ -135,11 +155,15 @@ async function getAndInstallLatest(): Promise<boolean> {
 }
 
 export async function handleLaunchingServer() {
-    if (!await downloadOrUpdate()) {
-        vscode.window.showErrorMessage("Initial Setup failed, couldn't start LSP, please check you have internet\n" +
-            "then run-> Nuru LSP: Start again"
-        )
-        return;
+    try {
+        if (!await downloadOrUpdate()) {
+            vscode.window.showErrorMessage("Initial Setup failed, couldn't start LSP, please check you have internet\n" +
+                "then run-> Nuru LSP: Start again"
+            )
+            return;
+        }
+    } catch (err) {
+        vscode.window.showErrorMessage(`Nuru Lsp error: ${err}`)
     }
     if (!client.isRunning()) {
         client.start().catch((err) => {
@@ -148,7 +172,7 @@ export async function handleLaunchingServer() {
     }
 }
 
-export async function openLogFileIfDebug(){
+export async function openLogFileIfDebug() {
     if (vscode.workspace.getConfiguration("nuru-lsp").get<boolean>("dbg")) {
         const logFile = vscode.Uri.file(getExtentionPath().args[0])
         const doc = await vscode.workspace.openTextDocument(logFile)
