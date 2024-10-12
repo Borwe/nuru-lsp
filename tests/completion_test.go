@@ -9,6 +9,7 @@ import (
 
 	"github.com/Borwe/go-lsp/logs"
 	"github.com/Borwe/go-lsp/lsp/defines"
+	"github.com/NuruProgramming/Nuru/module"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -198,6 +199,53 @@ func TestVariableFunctionCompletionWithIdentifierOnNewLine(t *testing.T) {
 
 	assert.Greater(t, len(itemsLabels), 0)
 	assert.NotContains(t, itemsLabels, "wewe", "wewe does not contain a ch character, so shouldn't be a completion")
+	t.Log("ITEMS: ", itemsLabels)
+	for _, item := range completions_expected {
+		assert.Contains(t, itemsLabels, item)
+	}
+}
+
+
+
+
+
+
+func TestVariableFunctionCompletionOfPackageOnLastLine(t *testing.T) {
+	setup.SetupLog()
+	//create a completions params
+	data, completionParams, errs := CreateCompletionParams(t, defines.Position{
+		Line:      5,
+		Character: 9,
+	}, []string{"tumia hisabati",
+		"fanya checka = unda(){ andika(\"Yolo\");}",
+		"wewe = unda(){ andika(\"WEWE\");}",
+		"yolo = 123",
+		"chora = \"50 Cent\"",
+		"hisabati.",
+	}, nil)
+	assert.Equal(t, 0, len(errs))
+
+	items, err := data.Completions(&completionParams, nil)
+	assert.Nil(t, err)
+
+	//fill completions expected
+	completions_expected := []string{}
+	hisabati_functions, ok := module.Mapper["hisabati"]
+	assert.True(t, ok, "Couldn't get histabati module")
+	hisabati_consts := module.Constants
+	for fn := range hisabati_functions.Functions{
+		completions_expected = append(completions_expected, fn)
+	}
+	for cs := range hisabati_consts {
+		completions_expected = append(completions_expected, cs)
+	}
+
+	itemsLabels := []string{}
+	for _, item := range *items {
+		itemsLabels = append(itemsLabels, item.Label)
+	}
+
+	assert.Greater(t, len(itemsLabels), 0)
 	t.Log("ITEMS: ", itemsLabels)
 	for _, item := range completions_expected {
 		assert.Contains(t, itemsLabels, item)

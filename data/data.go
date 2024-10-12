@@ -23,8 +23,13 @@ import (
 	"github.com/NuruProgramming/Nuru/parser"
 )
 
-var TUMIAS []string = []string{
-	"os", "muda", "mtandao", "jsoni", "hisabati",
+var TUMIAS []string = []string{}
+
+func init(){
+	// Get all default tumias exported by NURU
+	for tumia := range module.Mapper{
+		TUMIAS = append(TUMIAS, tumia)
+	}
 }
 
 type ErrorMapLineNumbers = map[uint][]string
@@ -151,7 +156,9 @@ func getAsts[T ast.Node](node ast.Node, result *[]T) {
 		break
 	case *ast.LetStatement:
 		logs.Println("LetStatement")
-		getAsts(node.Value, result)
+		if node!= nil && node.Value != nil {
+			getAsts(node.Value, result)
+		}
 		break
 	case *ast.FunctionLiteral:
 		logs.Println("FunctionLiteral")
@@ -202,9 +209,6 @@ func getAsts[T ast.Node](node ast.Node, result *[]T) {
 	case *ast.Import:
 		logs.Println("Import")
 		for _, stmt := range node.Identifiers {
-			if _, ok := module.Mapper[stmt.Value]; ok {
-				continue
-			}
 			var nd ast.Node = stmt
 			getAsts(nd, result)
 		}
@@ -404,6 +408,57 @@ func combineCompletions(completions []defines.CompletionItem,
 	return &completions
 }
 
+func (d *Data)getPackageCompletions(word *string) (*[]defines.CompletionItem, error){
+	completions := []defines.CompletionItem{}
+	//word should not be empty
+	if len(*word) == 0 {
+		return &completions, nil
+	}
+
+	pkg := (*word)[:len(*word)-1]
+	found := false
+	tumiaIdentifiers := getTumiaIdentifiers(d.RootTree)
+	for _, tm := range tumiaIdentifiers {
+		if tm.Value == pkg{
+			found = true
+		}
+	}
+
+	if !found {
+		//meaning no package completions available
+		return &completions, nil
+	}
+
+	mod, found := module.Mapper[pkg]
+
+	if found {
+		funcKind := defines.CompletionItemKindMethod
+		for methods := range mod.Functions{
+			completions = append(completions, defines.CompletionItem{
+				Label: methods,
+				Kind: &funcKind,
+			})
+		}
+	}
+
+	if pkg == "hisabati" {
+		varKind := defines.CompletionItemKindProperty
+		//hisabati is special as it has const variables too
+		for cnst, val := range module.Constants{
+			valstr := val.Inspect()
+			completions = append(completions, defines.CompletionItem{
+				Label: cnst,
+				Kind: &varKind,
+				LabelDetails: &defines.CompletionItemLabelDetails{
+					Detail: &valstr,
+				},
+			})
+		}
+	}
+
+	return &completions, nil
+}
+
 func (d *Data) Completions(completeParams *defines.CompletionParams,
 	defaultCompletions *[]defines.CompletionItem) (*[]defines.CompletionItem, error) {
 	//get current word, otherwise get previous
@@ -548,6 +603,9 @@ func (d *Data) Completions(completeParams *defines.CompletionParams,
 				}
 			}
 			return &completions, nil
+		}else if word!=nil && strings.Contains(*word, ".") {
+			//pakeji completions
+			return d.getPackageCompletions(word)
 		} else if word != nil && *word != "" && !(prevWord != nil && *prevWord == "fanya") {
 			completions, err := d.getCompletions(word)
 			if err != nil {
