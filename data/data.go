@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -102,7 +103,7 @@ func checkFileIsPackage(dir string, file fs.DirEntry) bool {
 }
 
 func getAsts[T ast.Node](node ast.Node, result *[]T) {
-	if(node == nil){
+	if v := reflect.ValueOf(node); !v.IsValid() || v.IsNil() {
 		return
 	}
 	switch node := node.(type) {
@@ -156,9 +157,7 @@ func getAsts[T ast.Node](node ast.Node, result *[]T) {
 		break
 	case *ast.LetStatement:
 		logs.Println("LetStatement")
-		if node!= nil && node.Value != nil {
-			getAsts(node.Value, result)
-		}
+		getAsts(node.Value, result)
 		break
 	case *ast.FunctionLiteral:
 		logs.Println("FunctionLiteral")

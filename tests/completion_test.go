@@ -210,7 +210,7 @@ func TestVariableFunctionCompletionWithIdentifierOnNewLine(t *testing.T) {
 
 
 
-func TestVariableFunctionCompletionOfPackageOnLastLine(t *testing.T) {
+func TestVariableFunctionCompletionOfStdPackageOnLastLine(t *testing.T) {
 	setup.SetupLog()
 	//create a completions params
 	data, completionParams, errs := CreateCompletionParams(t, defines.Position{
@@ -239,6 +239,40 @@ func TestVariableFunctionCompletionOfPackageOnLastLine(t *testing.T) {
 	for cs := range hisabati_consts {
 		completions_expected = append(completions_expected, cs)
 	}
+
+	itemsLabels := []string{}
+	for _, item := range *items {
+		itemsLabels = append(itemsLabels, item.Label)
+	}
+
+	assert.Greater(t, len(itemsLabels), 0)
+	t.Log("ITEMS: ", itemsLabels)
+	for _, item := range completions_expected {
+		assert.Contains(t, itemsLabels, item)
+	}
+}
+
+
+func TestVariableFunctionCompletionOfNonStdPackageOnLastLine(t *testing.T) {
+	setup.SetupLog()
+	//create a completions params
+	data, completionParams, errs := CreateCompletionParams(t, defines.Position{
+		Line:      5,
+		Character: 5,
+	}, []string{"tumia test",
+		"fanya checka = unda(){ andika(\"Yolo\");}",
+		"wewe = unda(){ andika(\"WEWE\");}",
+		"yolo = 123",
+		"chora = \"50 Cent\"",
+		"test.",
+	}, nil)
+	assert.Equal(t, 0, len(errs))
+
+	items, err := data.Completions(&completionParams, nil)
+	assert.Nil(t, err)
+
+	//fill completions expected
+	completions_expected := []string{"yo","checka","hehe"}
 
 	itemsLabels := []string{}
 	for _, item := range *items {
