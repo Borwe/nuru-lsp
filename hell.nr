@@ -5,3 +5,5 @@ lol = unda(){
     andika("LOOL!")
 }
 
+tumia anguka
+anguka.anguka()

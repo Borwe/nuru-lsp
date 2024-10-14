@@ -26,9 +26,9 @@ import (
 
 var TUMIAS []string = []string{}
 
-func init(){
+func init() {
 	// Get all default tumias exported by NURU
-	for tumia := range module.Mapper{
+	for tumia := range module.Mapper {
 		TUMIAS = append(TUMIAS, tumia)
 	}
 }
@@ -93,8 +93,7 @@ func checkFileIsPackage(dir string, file fs.DirEntry) bool {
 		if err != nil || len(errs) > 0 {
 			return false
 		}
-		Pages[fpath] = *tmp
-		data = Pages[fpath]
+		data = *tmp
 	}
 	pakejiAsts := []*ast.Package{}
 	getAsts(*data.RootTree, &pakejiAsts)
@@ -407,7 +406,7 @@ func combineCompletions(completions []defines.CompletionItem,
 	return &completions
 }
 
-func (d *Data)getPackageCompletions(word *string) (*[]defines.CompletionItem, error){
+func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, error) {
 	completions := []defines.CompletionItem{}
 	//word should not be empty
 	if len(*word) == 0 {
@@ -418,13 +417,85 @@ func (d *Data)getPackageCompletions(word *string) (*[]defines.CompletionItem, er
 	found := false
 	tumiaIdentifiers := getTumiaIdentifiers(d.RootTree)
 	for _, tm := range tumiaIdentifiers {
-		if tm.Value == pkg{
+		if tm.Value == pkg {
 			found = true
 		}
 	}
 
 	if !found {
-		//meaning no package completions available
+		//meaning not an imported tumia, so no need to compelte
+		return &completions, nil
+	}
+
+	found = false
+	for _, std := range TUMIAS{
+		if std == pkg {
+			found = true
+		}
+	}
+
+	if !found {
+		//meaning not an std package completions
+		getAndFillPakejiPages(path.Dir(d.File))
+		var dToUse *Data = nil
+		for _, data := range Pages {
+			if strings.Contains(data.File, pkg+".nr") {
+				dToUse = &data
+				break
+			}
+		}
+
+		pakejis := []*ast.Package{}
+		getAsts(*dToUse.RootTree, &pakejis)
+		if len(pakejis) == 0 {
+			//meaning not a pakeji
+			return &completions, nil
+		}
+
+		letEquals := []*ast.LetStatement{}
+		getAsts(pakejis[0], &letEquals)
+		assignmentEquals := []*ast.Assign{}
+		getAsts(pakejis[0], &assignmentEquals)
+
+		methodKind := defines.CompletionItemKindMethod
+		propertyKind := defines.CompletionItemKindProperty
+		for _, val := range letEquals {
+			kind := propertyKind
+			label := val.Name.String()
+			detail := ""
+			if val.Value != nil {
+				detail = val.String()
+				if _, ok := val.Value.(*ast.FunctionLiteral); ok {
+					kind = methodKind
+				}
+			}
+			completions = append(completions, defines.CompletionItem{
+				Kind:  &kind,
+				Label: label,
+				LabelDetails: &defines.CompletionItemLabelDetails{
+					Detail: &detail,
+				},
+			})
+		}
+		for _, val := range assignmentEquals {
+			kind := propertyKind
+			label := val.Name.String()
+			detail := ""
+			if val.Value != nil {
+				detail = val.String()
+				if _, ok := val.Value.(*ast.FunctionLiteral); ok {
+					kind = methodKind
+				}
+			}
+			completions = append(completions, defines.CompletionItem{
+				Kind:  &kind,
+				Label: label,
+				LabelDetails: &defines.CompletionItemLabelDetails{
+					Detail: &detail,
+				},
+			})
+		}
+
 		return &completions, nil
 	}
 
@@ -432,10 +503,10 @@ func (d *Data)getPackageCompletions(word *string) (*[]defines.CompletionItem, er
 
 	if found {
 		funcKind := defines.CompletionItemKindMethod
-		for methods := range mod.Functions{
+		for methods := range mod.Functions {
 			completions = append(completions, defines.CompletionItem{
 				Label: methods,
-				Kind: &funcKind,
+				Kind:  &funcKind,
 			})
 		}
 	}
@@ -443,11 +514,11 @@ func (d *Data)getPackageCompletions(word *string) (*[]defines.CompletionItem, er
 	if pkg == "hisabati" {
 		varKind := defines.CompletionItemKindProperty
 		//hisabati is special as it has const variables too
-		for cnst, val := range module.Constants{
+		for cnst, val := range module.Constants {
 			valstr := val.Inspect()
 			completions = append(completions, defines.CompletionItem{
 				Label: cnst,
-				Kind: &varKind,
+				Kind:  &varKind,
 				LabelDetails: &defines.CompletionItemLabelDetails{
 					Detail: &valstr,
 				},
@@ -458,8 +529,21 @@ func (d *Data)getPackageCompletions(word *string) (*[]defines.CompletionItem, er
 	return &completions, nil
 }
 
+func getAndFillPakejiPages(dir string) []string {
+	packajiFiles := []string{}
+	files := getNuruFilesInDir(dir)
+	for _, file := range files {
+		if checkFileIsPackage(dir, file) {
+			name := file.Name()
+			packajiFiles = append(packajiFiles, name[:len(name)-3])
+		}
+	}
+	return packajiFiles
+}
+
 func (d *Data) Completions(completeParams *defines.CompletionParams,
-	defaultCompletions *[]defines.CompletionItem) (*[]defines.CompletionItem, error) {
+	defaultCompletions *[]defines.CompletionItem) (*[]defines.CompletionItem,
+	error) {
 	//get current word, otherwise get previous
 	var word *string = nil
 	var prevWord *string = nil
@@ -493,15 +577,8 @@ func (d *Data) Completions(completeParams *defines.CompletionParams,
 	case "tumia":
 		//get all files in directory of current data
 		logs.Println("TUMIA FILE COMPLETING:", d.File)
-		packajiFiles := []string{}
 		dir := path.Dir(d.File)
-		files := getNuruFilesInDir(dir)
-		for _, file := range files {
-			if checkFileIsPackage(dir, file) {
-				name := file.Name()
-				packajiFiles = append(packajiFiles, name[:len(name)-3])
-			}
-		}
+		packajiFiles := getAndFillPakejiPages(dir)
 		logs.Println("PAKEJIS:", packajiFiles)
 		completions := []defines.CompletionItem{}
 		pakejiInfo := "Ni pakeji"
@@ -522,7 +599,7 @@ func (d *Data) Completions(completeParams *defines.CompletionParams,
 		}
 		for file, page := range Pages {
 			fileDir := path.Dir(page.File)
-			if fileDir == dir && file != string(completeParams.TextDocument.Uri){
+			if fileDir == dir && file != string(completeParams.TextDocument.Uri) {
 				checks := []*ast.Package{}
 				getAsts(*page.RootTree, &checks)
 				if len(checks) > 0 {
@@ -602,7 +679,7 @@ func (d *Data) Completions(completeParams *defines.CompletionParams,
 				}
 			}
 			return &completions, nil
-		}else if word!=nil && strings.Contains(*word, ".") {
+		} else if word != nil && strings.Contains(*word, ".") {
 			//pakeji completions
 			return d.getPackageCompletions(word)
 		} else if word != nil && *word != "" && !(prevWord != nil && *prevWord == "fanya") {
@@ -632,13 +709,13 @@ func NewData(file string, version uint64, content []string) (*Data, error, []str
 		return nil, err, errs
 	}
 
-	logs.Println("FILEOPENBEFORE:",file)
+	logs.Println("FILEOPENBEFORE:", file)
 	filePath := fileUrl.Path
 	if strings.HasPrefix(filePath, "/") && filepath.IsAbs(filePath[1:]) {
 		filePath = filePath[1:]
 	}
 
-	logs.Println("FILEOPENAFTER:",filePath)
+	logs.Println("FILEOPENAFTER:", filePath)
 	data := Data{
 		File:     filePath,
 		Version:  version,
@@ -810,7 +887,6 @@ func OnDocOpen(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err
 	defer PagesMutext.Unlock()
 
 	file := string(req.TextDocument.Uri)
-
 
 	//if already previously opened by other methods just return here
 	if _, ok := Pages[file]; ok {

@@ -272,7 +272,7 @@ func TestVariableFunctionCompletionOfNonStdPackageOnLastLine(t *testing.T) {
 	assert.Nil(t, err)
 
 	//fill completions expected
-	completions_expected := []string{"yo","checka","hehe"}
+	completions_expected := []string{"yo","cheka"}
 
 	itemsLabels := []string{}
 	for _, item := range *items {
