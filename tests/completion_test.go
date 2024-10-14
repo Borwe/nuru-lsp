@@ -285,3 +285,38 @@ func TestVariableFunctionCompletionOfNonStdPackageOnLastLine(t *testing.T) {
 		assert.Contains(t, itemsLabels, item)
 	}
 }
+
+
+func TestVariableFunctionCompletionOfNonStdPackageInside(t *testing.T) {
+	setup.SetupLog()
+	//create a completions params
+	data, completionParams, _ := CreateCompletionParams(t, defines.Position{
+		Line:      5,
+		Character: 9,
+	}, []string{"tumia test",
+		"fanya checka = unda(){ andika(\"Yolo\");}",
+		"wewe = unda(){ andika(\"WEWE\");}",
+		"yolo = 123",
+		"chora = unda(){",
+		"    test.",
+		"}",
+		"bolo = \"sohk\"",
+	}, nil)
+
+	items, err := data.Completions(&completionParams, nil)
+	assert.Nil(t, err)
+
+	//fill completions expected
+	completions_expected := []string{"yo","cheka"}
+
+	itemsLabels := []string{}
+	for _, item := range *items {
+		itemsLabels = append(itemsLabels, item.Label)
+	}
+
+	assert.Greater(t, len(itemsLabels), 0)
+	t.Log("ITEMS: ", itemsLabels)
+	for _, item := range completions_expected {
+		assert.Contains(t, itemsLabels, item)
+	}
+}

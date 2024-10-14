@@ -11,7 +11,6 @@
 - Error highlighting (Doesn't work in latest VScode, supported in almost every other editor)
 
 
-
 ## Building from source
 
 ```sh
