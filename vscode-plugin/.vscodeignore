@@ -9,3 +9,8 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
+nuru-lsp.zip
+**/*.nr
+.env
+.env.sample
+test_dir/

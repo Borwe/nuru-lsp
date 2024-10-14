@@ -11,16 +11,18 @@ const GIT_API_URL = "https://api.github.com/repos/borwe/nuru-lsp/releases/latest
 export const CMD: string = os.platform() == "win32" ? "nuru-lsp.exe" : "nuru-lsp"
 const OSTYPE = os.platform() === "win32" ? "windows" : os.platform() === "linux" ? "ubuntu" : os.platform() === "darwin" ? "macos" : "noooo"
 
+const INTERNET_NOTAVAILABLE_ERROR = "Nuru LSP: Internet not reachable"
+
 async function getLatestReleaserVersionString(): Promise<ReleaseInfo> {
     try {
         const res = await fetch(GIT_API_URL)
         if (!res.ok) {
-            throw "Nuru LSP: Internet not reachable"
+            throw INTERNET_NOTAVAILABLE_ERROR
         }
         const info: ReleaseInfo = JSON.parse(await res.text())
         return info
     } catch (err) {
-        throw "Nuru LSP: Internet not reachable"
+        throw INTERNET_NOTAVAILABLE_ERROR
     }
 }
 
@@ -84,8 +86,9 @@ export async function getLatestReleaseVersion(): Promise<number> {
 }
 
 export async function downloadOrUpdate(): Promise<boolean> {
+    const installed = isInstalled()
     try {
-        if (isInstalled()) {
+        if (installed) {
             const currentVersion: number = await new Promise((resolve, reject) => {
                 exec(getPathOfCMD() + " --version", (err, stdout, stderr) => {
                     if (err) {
@@ -107,7 +110,10 @@ export async function downloadOrUpdate(): Promise<boolean> {
 
         return await getAndInstallLatest()
     } catch (err) {
-        vscode.window.showErrorMessage("Error: " + err)
+        if(String(err) !== INTERNET_NOTAVAILABLE_ERROR){
+            vscode.window.showErrorMessage("Error: " + err)
+        }
+        return installed
     }
 }
 
@@ -157,7 +163,7 @@ async function getAndInstallLatest(): Promise<boolean> {
 
 export async function handleLaunchingServer() {
     try {
-        if (!await downloadOrUpdate()) {
+        if (await downloadOrUpdate() === false) {
             vscode.window.showErrorMessage("Initial Setup failed, couldn't start LSP, please check you have internet\n" +
                 "then run-> Nuru LSP: Start again"
             )
