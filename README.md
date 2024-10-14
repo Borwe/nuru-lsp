@@ -4,6 +4,13 @@
 
 ## For more info on Nuru Programming Language click [here](https://nuruprogramming.org/)
 
+## Current Features:
+- Variables and Function completions
+- Standard Library completions
+- Cross pakeji completions
+- Error highlighting (Doesn't work in latest VScode, supported in almost every other editor)
+
+
 
 ## Building from source
 
