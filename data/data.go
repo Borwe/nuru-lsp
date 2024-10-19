@@ -413,7 +413,14 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 		return &completions, nil
 	}
 
-	pkg := (*word)[:len(*word)-1]
+	completsVal := strings.Split(*word,".")
+
+	pkg := completsVal[0]
+	var method *string = nil
+	if len(completsVal)>1{
+		method = &completsVal[len(completsVal)-1]
+	}
+
 	found := false
 	tumiaIdentifiers := getTumiaIdentifiers(d.RootTree)
 	for _, tm := range tumiaIdentifiers {
@@ -445,6 +452,11 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 			}
 		}
 
+		if dToUse == nil {
+			//meaning no file with current package name located
+			return &completions, nil
+		}
+
 		pakejis := []*ast.Package{}
 		getAsts(*dToUse.RootTree, &pakejis)
 		if len(pakejis) == 0 {
@@ -469,6 +481,9 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 					kind = methodKind
 				}
 			}
+			if method!= nil && !strings.Contains(label, *method) {
+				continue
+			}
 			completions = append(completions, defines.CompletionItem{
 				Kind:  &kind,
 				Label: label,
@@ -487,6 +502,9 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 					kind = methodKind
 				}
 			}
+			if method!= nil && !strings.Contains(label, *method){
+				continue
+			}
 			completions = append(completions, defines.CompletionItem{
 				Kind:  &kind,
 				Label: label,
@@ -504,6 +522,9 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 	if found {
 		funcKind := defines.CompletionItemKindMethod
 		for methods := range mod.Functions {
+			if method!= nil && !strings.Contains(methods, *method){
+				continue
+			}
 			completions = append(completions, defines.CompletionItem{
 				Label: methods,
 				Kind:  &funcKind,
@@ -515,6 +536,9 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 		varKind := defines.CompletionItemKindProperty
 		//hisabati is special as it has const variables too
 		for cnst, val := range module.Constants {
+			if method!= nil && !strings.Contains(cnst, *method){
+				continue
+			}
 			valstr := val.Inspect()
 			completions = append(completions, defines.CompletionItem{
 				Label: cnst,
