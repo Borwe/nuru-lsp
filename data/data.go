@@ -59,22 +59,24 @@ func (d Data) GetWord(post defines.Position) (*string, bool){
 		startIndex := post.Character
 		end := post.Character
 
+
 		//go backwards
-		idx := uint(startIndex) //used for moving across line
+		idx := int64(startIndex) //used for moving across line
 		for idx>=0 {
+			logs.Println("LINE:",line,"POS:",post, "IDX",idx)
 			if line[idx] == ' ' {
 				break
 			} 
-			startIndex = idx
+			startIndex = uint(idx)
 			idx -=1
 		}
 		//go forward
-		idx = end
-		for idx < uint(len(line)){
+		idx = int64(end)
+		for idx < int64(len(line)){
 			if line[idx] == ' '{
 				break
 			}
-			end = idx
+			end = uint(idx)
 			idx+=1
 		}
 

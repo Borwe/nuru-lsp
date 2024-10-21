@@ -27,3 +27,22 @@ func TestLocalFileHoverOnStdTumias(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, n.Value, jsoniMessage)
 }
+
+
+func TestLocalFileHoverOnStdTumiasFunction(t *testing.T) {
+	setup.SetupLog()
+	hoverParams := CreateHoverParam(t, defines.Position{
+		Line:      1,
+		Character: 5,
+	}, []string{"tumia os",
+		"os.toka(1)"}, nil)
+
+
+	tokaMessage := "Methodi ndani ya pakeji os"
+	hoverResult, err := hovers.GetHover(&hoverParams)
+	assert.Nil(t, err)
+	assert.NotNil(t, hoverResult)
+	n, ok := hoverResult.Contents.(defines.MarkupContent)
+	assert.True(t, ok)
+	assert.Equal(t, n.Value, tokaMessage)
+}
