@@ -37,6 +37,7 @@ type ErrorMapLineNumbers = map[uint][]string
 
 // Hold information on .nr file
 type Data struct {
+	FileUri     string
 	File        string
 	Version     uint64
 	Errors      ErrorMapLineNumbers
@@ -413,11 +414,11 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 		return &completions, nil
 	}
 
-	completsVal := strings.Split(*word,".")
+	completsVal := strings.Split(*word, ".")
 
 	pkg := completsVal[0]
 	var method *string = nil
-	if len(completsVal)>1{
+	if len(completsVal) > 1 {
 		method = &completsVal[len(completsVal)-1]
 	}
 
@@ -435,7 +436,7 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 	}
 
 	found = false
-	for _, std := range TUMIAS{
+	for _, std := range TUMIAS {
 		if std == pkg {
 			found = true
 		}
@@ -481,7 +482,7 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 					kind = methodKind
 				}
 			}
-			if method!= nil && !strings.Contains(label, *method) {
+			if method != nil && !strings.Contains(label, *method) {
 				continue
 			}
 			completions = append(completions, defines.CompletionItem{
@@ -502,7 +503,7 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 					kind = methodKind
 				}
 			}
-			if method!= nil && !strings.Contains(label, *method){
+			if method != nil && !strings.Contains(label, *method) {
 				continue
 			}
 			completions = append(completions, defines.CompletionItem{
@@ -522,7 +523,7 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 	if found {
 		funcKind := defines.CompletionItemKindMethod
 		for methods := range mod.Functions {
-			if method!= nil && !strings.Contains(methods, *method){
+			if method != nil && !strings.Contains(methods, *method) {
 				continue
 			}
 			completions = append(completions, defines.CompletionItem{
@@ -536,7 +537,7 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 		varKind := defines.CompletionItemKindProperty
 		//hisabati is special as it has const variables too
 		for cnst, val := range module.Constants {
-			if method!= nil && !strings.Contains(cnst, *method){
+			if method != nil && !strings.Contains(cnst, *method) {
 				continue
 			}
 			valstr := val.Inspect()
@@ -741,6 +742,7 @@ func NewData(file string, version uint64, content []string) (*Data, error, []str
 
 	logs.Println("FILEOPENAFTER:", filePath)
 	data := Data{
+		FileUri: file,
 		File:     filePath,
 		Version:  version,
 		Errors:   make(ErrorMapLineNumbers, 0),
@@ -831,8 +833,9 @@ func notifyErrors(doc *Data, errors []string) {
 		}
 	}
 	logs.Println("DIAGS:", len(diagnostics), len(errors))
+	logs.Println("URI DIAGS:", doc.FileUri)
 	publishDiag := defines.PublishDiagnosticsParams{
-		Uri:         defines.DocumentUri(doc.File),
+		Uri:         defines.DocumentUri(doc.FileUri),
 		Diagnostics: diagnostics,
 	}
 	server.Notify(server.Server, "textDocument/publishDiagnostics", publishDiag)
