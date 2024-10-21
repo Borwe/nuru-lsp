@@ -49,6 +49,49 @@ type Data struct {
 var Pages = map[string]Data{}
 var PagesMutext = sync.Mutex{}
 
+func (d Data) GetWord(post defines.Position) (*string, bool){
+	var word *string  = nil
+	found := false
+	for row, line := range d.Content {
+		if uint(row )!= post.Line {
+			continue
+		}
+		startIndex := post.Character
+		end := post.Character
+
+		//go backwards
+		idx := uint(startIndex) //used for moving across line
+		for idx>=0 {
+			if line[idx] == ' ' {
+				break
+			} 
+			startIndex = idx
+			idx -=1
+		}
+		//go forward
+		idx = end
+		for idx < uint(len(line)){
+			if line[idx] == ' '{
+				break
+			}
+			end = idx
+			idx+=1
+		}
+
+		possibleWord := line[startIndex:end+1]
+		possibleWord = strings.TrimSpace(possibleWord)
+
+		if len(possibleWord) > 0{
+			word = &possibleWord
+			found = true
+		}
+
+		//we already found the line
+		break;
+	}
+	return word, found
+}
+
 func ParseTree(parser *parser.Parser) (ast.Node, []string) {
 	ast := parser.ParseProgram()
 	errorsList := parser.Errors()
@@ -313,7 +356,7 @@ func getNuruFilesInDir(dir string) []fs.DirEntry {
 	return result
 }
 
-func getTumiaIdentifiers(node *ast.Node) []*ast.Identifier {
+func GetTumiaIdentifiers(node *ast.Node) []*ast.Identifier {
 	tumiaIdentifiers := []*ast.Identifier{}
 	tumiaLists := []*ast.Import{}
 	getAsts(*node, &tumiaLists)
@@ -326,7 +369,7 @@ func getTumiaIdentifiers(node *ast.Node) []*ast.Identifier {
 func (d *Data) getCompletions(word *string) (*[]defines.CompletionItem, error) {
 	completions := []defines.CompletionItem{}
 	//get all the tumias
-	tumiaIdentifiers := getTumiaIdentifiers(d.RootTree)
+	tumiaIdentifiers := GetTumiaIdentifiers(d.RootTree)
 	for _, val := range tumiaIdentifiers {
 		kind := defines.CompletionItemKindFile
 		label := val.String()
@@ -430,7 +473,7 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 	}
 
 	found := false
-	tumiaIdentifiers := getTumiaIdentifiers(d.RootTree)
+	tumiaIdentifiers := GetTumiaIdentifiers(d.RootTree)
 	for _, tm := range tumiaIdentifiers {
 		if tm.Value == pkg {
 			found = true
@@ -451,7 +494,7 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 
 	if !found {
 		//meaning not an std package completions
-		getAndFillPakejiPages(path.Dir(d.File))
+		GetAndFillPakejiPages(path.Dir(d.File))
 		var dToUse *Data = nil
 		for _, data := range Pages {
 			if strings.Contains(data.File, pkg+".nr") {
@@ -561,7 +604,7 @@ func (d *Data) getPackageCompletions(word *string) (*[]defines.CompletionItem, e
 	return &completions, nil
 }
 
-func getAndFillPakejiPages(dir string) []string {
+func GetAndFillPakejiPages(dir string) []string {
 	packajiFiles := []string{}
 	files := getNuruFilesInDir(dir)
 	for _, file := range files {
@@ -583,7 +626,7 @@ func (d *Data) Completions(completeParams *defines.CompletionParams,
 		if no != int(completeParams.Position.Line) {
 			continue
 		}
-		//-1 because files consider column 1 as index 0
+		//-1 because cursor is ahead by 1 position of where it is inserting
 		charPos := completeParams.Position.Character - 1
 		runed := []rune(line)
 		if charPos > 0 {
@@ -610,7 +653,7 @@ func (d *Data) Completions(completeParams *defines.CompletionParams,
 		//get all files in directory of current data
 		logs.Println("TUMIA FILE COMPLETING:", d.File)
 		dir := path.Dir(d.File)
-		packajiFiles := getAndFillPakejiPages(dir)
+		packajiFiles := GetAndFillPakejiPages(dir)
 		logs.Println("PAKEJIS:", packajiFiles)
 		completions := []defines.CompletionItem{}
 		pakejiInfo := "Ni pakeji"

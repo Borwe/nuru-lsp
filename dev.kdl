@@ -20,7 +20,7 @@ layout {
                 pane stacked=true{
                         pane name="go part"  focus=true edit="./go.mod" expanded=true
                         pane name="vscode part" cwd="./vscode-plugin" edit="./package.json"
-                        pane name="neovim nuru testing" command="hx" {
+                        pane name="neovim nuru testing" command="nvim" {
                                 args "./hell.nr"
                         }
                         pane size=1 borderless=true {
