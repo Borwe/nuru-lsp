@@ -4,7 +4,6 @@ tumia hisabati
 
 lol = unda(){
     andika("LOOL!")
-    hisabati.
 }
 
 tumia anguka

@@ -102,6 +102,13 @@ func checkFileIsPackage(dir string, file fs.DirEntry) bool {
 	return len(pakejiAsts) > 0
 }
 
+func IsNill(element interface{}) bool {
+	if v := reflect.ValueOf(element); !v.IsValid() || v.IsNil() {
+		return false
+	}
+	return true
+}
+
 func getAsts[T ast.Node](node ast.Node, result *[]T) {
 	if v := reflect.ValueOf(node); !v.IsValid() || v.IsNil() {
 		return
@@ -347,7 +354,7 @@ func (d *Data) getCompletions(word *string) (*[]defines.CompletionItem, error) {
 		funcKind := defines.CompletionItemKindFunction
 		label := val.Name.String()
 		detail := ""
-		if val.Value != nil {
+		if !IsNill(val.Value) {
 			detail = val.String()
 		}
 		logs.Println("NAMED:", label, "VAL", detail)
@@ -365,7 +372,7 @@ func (d *Data) getCompletions(word *string) (*[]defines.CompletionItem, error) {
 		kind := defines.CompletionItemKindField
 		label := val.Name.String()
 		detail := ""
-		if val.Value != nil {
+		if !IsNill(val.Value) {
 			detail = val.String()
 		}
 		logs.Println("NAMED:", label, "VAL", detail)
@@ -742,7 +749,7 @@ func NewData(file string, version uint64, content []string) (*Data, error, []str
 
 	logs.Println("FILEOPENAFTER:", filePath)
 	data := Data{
-		FileUri: file,
+		FileUri:  file,
 		File:     filePath,
 		Version:  version,
 		Errors:   make(ErrorMapLineNumbers, 0),

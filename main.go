@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"nuru-lsp/completions"
 	"nuru-lsp/data"
+	"nuru-lsp/hovers"
 	"nuru-lsp/server"
 	"nuru-lsp/setup"
 	"os"
@@ -13,7 +14,7 @@ import (
 	"github.com/Borwe/go-lsp/lsp/defines"
 )
 
-const Version = "0.0.10"
+const Version = "0.0.11"
 
 func main() {
 
@@ -32,13 +33,7 @@ func main() {
 
 	server.Server.OnHover(func(ctx context.Context,
 		req *defines.HoverParams) (*defines.Hover, error) {
-		logs.Println("Hover:", req)
-		return &defines.Hover{
-			Contents: defines.MarkupContent{
-				Kind:  defines.MarkupKindPlainText,
-				Value: "OnHover Not implemented yet",
-			},
-		}, nil
+		return hovers.GetHover(req)
 	})
 
 	server.Server.OnDidSaveTextDocument(func(ctx context.Context, req *defines.DidSaveTextDocumentParams) (err error) {
@@ -53,11 +48,11 @@ func main() {
 	server.Server.OnDidChangeTextDocument(data.OnDataChange)
 	server.Server.OnCompletion(completions.CompletionFunc)
 	server.Server.OnExit(func(ctx context.Context, req *interface{}) (err error) {
-		logs.Println("EXIT VARIABLE:",req)
+		logs.Println("EXIT VARIABLE:", req)
 		return nil
 	})
 	server.Server.OnShutdown(func(ctx context.Context, req *interface{}) (err error) {
-		logs.Println("SHUTDOWN VARIABLE:",req)
+		logs.Println("SHUTDOWN VARIABLE:", req)
 		return nil
 	})
 
