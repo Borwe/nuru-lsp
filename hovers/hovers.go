@@ -1,10 +1,13 @@
 package hovers
 
 import (
+	"fmt"
 	"nuru-lsp/data"
 
 	"github.com/Borwe/go-lsp/logs"
 	"github.com/Borwe/go-lsp/lsp/defines"
+	"github.com/NuruProgramming/Nuru/module"
+	"github.com/NuruProgramming/Nuru/object"
 )
 
 func getAllIdengitiers() {}
@@ -19,6 +22,15 @@ func init() {
 	StdTumiasInfo["hisabati"] = "Pakeji yenye inasaidia kufanya hesabu na hisabati mingi"
 }
 
+func getPackageAndMethodFromWord(word *string) (pkg *string,
+	parameter *string, isFunction bool, found bool) {
+	pkg = nil
+	parameter = nil
+	isFunction = true
+	found = false
+	return
+}
+
 func GetHover(req *defines.HoverParams) (*defines.Hover, error) {
 	d, ok := data.Pages[string(req.TextDocument.Uri)]
 	if !ok {
@@ -30,7 +42,7 @@ func GetHover(req *defines.HoverParams) (*defines.Hover, error) {
 		return nil, nil
 	}
 
-	logs.Println("WORD:",*wordHovered)
+	logs.Println("WORD:", *wordHovered)
 
 	stdTumia, ok := StdTumiasInfo[*wordHovered]
 	if ok {
@@ -41,6 +53,25 @@ func GetHover(req *defines.HoverParams) (*defines.Hover, error) {
 				Value: stdTumia,
 			},
 		}, nil
+	}
+
+	//slip word with . and remove any ()
+	pkg, property, isFunction, found := getPackageAndMethodFromWord(wordHovered)
+	if mod, ok := module.Mapper[*pkg]; ok && found {
+		//only hisabati has constants,
+		if *pkg == "hisabati" {
+			obj, ok := module.Constants[*property]
+			if floatValue, floatValid := obj.(*object.Float); ok && floatValid && !isFunction {
+				return &defines.Hover{
+					Contents: defines.MarkupContent{
+						Kind:  defines.MarkupKindPlainText,
+						Value: fmt.Sprintf("Kutoka pakeji wa %s kuna value wa %d", *pkg, floatValue.Value),
+					},
+				}, nil
+			}
+		} else {
+
+		}
 	}
 
 	return &defines.Hover{
