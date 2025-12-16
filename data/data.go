@@ -807,8 +807,14 @@ func notifyErrors(doc *Data, errors []string) {
 		}
 	}
 	logs.Println("DIAGS:", len(diagnostics), len(errors))
+	
+	// Fix URI scheme for LSP clients
+	uri := doc.File
+	if !strings.HasPrefix(uri, "file://") {
+		uri = "file://" + uri
+	}
 	publishDiag := defines.PublishDiagnosticsParams{
-		Uri:         defines.DocumentUri(doc.File),
+		Uri:         defines.DocumentUri(uri),
 		Diagnostics: diagnostics,
 	}
 	server.Notify(server.Server, "textDocument/publishDiagnostics", publishDiag)
@@ -856,13 +862,20 @@ func parseAndNotifyErrors(doc *Data, uri defines.DocumentUri) {
 			})
 		}
 	}
+	
+	// Fix URI scheme for LSP clients
+	uriStr := string(uri)
+	if !strings.HasPrefix(uriStr, "file://") {
+		uriStr = "file://" + uriStr
+	}
 	publishDiag := defines.PublishDiagnosticsParams{
-		Uri:         uri,
+		Uri:         defines.DocumentUri(uriStr),
 		Diagnostics: diagnostics,
 	}
 	server.Notify(server.Server, "textDocument/publishDiagnostics", publishDiag)
 	//now go line after line adding variables to scope
 }
+
 
 func ReadLine(in string) string {
 	out := strings.Split(in, "\r\n")
